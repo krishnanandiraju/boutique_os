@@ -11,6 +11,7 @@ from app.core.config import settings
 from app.db import Base, SessionLocal, engine
 from app.seed import seed_data
 from app.services.inventory_service import DomainError
+from app.stitching.demo_seed import seed_demo_fit_memory
 from app.stitching.routes import router as stitching_router
 from app.stitching.service import seed_garment_definitions
 
@@ -51,6 +52,7 @@ async def lifespan(app: FastAPI):
     try:
         seed_data(db)
         seed_garment_definitions(db)
+        seed_demo_fit_memory(db)
     finally:
         db.close()
     yield
