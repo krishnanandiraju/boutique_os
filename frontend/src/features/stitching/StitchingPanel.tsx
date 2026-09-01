@@ -49,6 +49,7 @@ export function StitchingPanel({ customerId, customerName }: { customerId: numbe
     setGarments(garmentRows)
     setRecords(recordRows)
     if (!selectedRecordId && recordRows[0]) setSelectedRecordId(recordRows[0].id)
+    if (recordRows.length === 0) setInsight(null)
   }
 
   useEffect(() => {
@@ -59,16 +60,14 @@ export function StitchingPanel({ customerId, customerName }: { customerId: numbe
         setGarments(garmentRows)
         setRecords(recordRows)
         setSelectedRecordId(recordRows[0]?.id ?? null)
+        if (recordRows.length === 0) setInsight(null)
       })
       .catch((err) => active && setError(err instanceof Error ? err.message : 'Failed to load stitch history'))
     return () => { active = false }
   }, [customerId])
 
   useEffect(() => {
-    if (!selectedRecord) {
-      setInsight(null)
-      return
-    }
+    if (!selectedRecord) return
     let active = true
     void stitchingApi.customerInsights(customerId, selectedRecord.garment_type_code)
       .then((result) => active && setInsight(result))
