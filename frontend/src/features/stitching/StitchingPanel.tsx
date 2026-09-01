@@ -6,6 +6,7 @@ import type {
   FitArea,
   FitDirection,
   GarmentTypeDefinition,
+  StitchFeedback,
   StitchRecord,
   StitchRecordStatus,
 } from './types'
@@ -16,6 +17,11 @@ const severities: FeedbackSeverity[] = ['MINOR', 'MODERATE', 'MAJOR']
 
 function pretty(value: string): string {
   return value.toLowerCase().replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())
+}
+
+function feedbackSentence(feedback: StitchFeedback): string {
+  const adjustment = feedback.adjustment_value ? ` by ${feedback.adjustment_value} ${feedback.adjustment_unit || ''}` : ''
+  return `${pretty(feedback.fit_area)} ${pretty(feedback.direction)}${adjustment}`
 }
 
 export function StitchingPanel({ customerId, customerName }: { customerId: number; customerName?: string }) {
@@ -36,6 +42,7 @@ export function StitchingPanel({ customerId, customerName }: { customerId: numbe
 
   const selectedRecord = useMemo(() => records.find((record) => record.id === selectedRecordId) || records[0] || null, [records, selectedRecordId])
   const selectedGarment = garments.find((garment) => garment.code === (selectedRecord?.garment_type_code || garmentType))
+  const openFeedback = records.flatMap((record) => record.feedback).filter((feedback) => !feedback.resolved)
 
   async function refresh() {
     const [garmentRows, recordRows] = await Promise.all([stitchingApi.garmentTypes(), stitchingApi.customerRecords(customerId)])
@@ -51,7 +58,7 @@ export function StitchingPanel({ customerId, customerName }: { customerId: numbe
         if (!active) return
         setGarments(garmentRows)
         setRecords(recordRows)
-        if (recordRows[0]) setSelectedRecordId(recordRows[0].id)
+        setSelectedRecordId(recordRows[0]?.id ?? null)
       })
       .catch((err) => active && setError(err instanceof Error ? err.message : 'Failed to load stitch history'))
     return () => { active = false }
@@ -93,6 +100,7 @@ export function StitchingPanel({ customerId, customerName }: { customerId: numbe
   async function changeStatus(status: StitchRecordStatus) {
     if (!selectedRecord) return
     setBusy(true)
+    setError('')
     try {
       await stitchingApi.updateRecord(selectedRecord.id, { status })
       await refresh()
@@ -126,6 +134,19 @@ export function StitchingPanel({ customerId, customerName }: { customerId: numbe
     }
   }
 
+  async function toggleResolved(feedback: StitchFeedback) {
+    setBusy(true)
+    setError('')
+    try {
+      await stitchingApi.updateFeedback(feedback.id, { resolved: !feedback.resolved })
+      await refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update fit feedback')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <section className="stitching-feature">
       <div className="section-head">
@@ -138,24 +159,18 @@ export function StitchingPanel({ customerId, customerName }: { customerId: numbe
 
       {error && <p className="error">{error}</p>}
 
-      <div className="cards">
-        <article className="card">
-          <p>Past stitch records</p>
-          <h3>{records.length}</h3>
-        </article>
-        <article className="card">
-          <p>Open fit observations</p>
-          <h3>{insight?.unresolved_feedback_count ?? 0}</h3>
-        </article>
-        <article className="card">
-          <p>Recurring fit memories</p>
-          <h3>{insight?.recurring_feedback.length ?? 0}</h3>
-        </article>
+      <div className="fit-memory-summary">
+        <article className="fit-summary-card"><span>Stitch records</span><strong>{records.length}</strong><small>Garments with remembered history</small></article>
+        <article className="fit-summary-card attention"><span>Open observations</span><strong>{openFeedback.length}</strong><small>Fit notes still relevant</small></article>
+        <article className="fit-summary-card insight"><span>Recurring memories</span><strong>{insight?.recurring_feedback.length ?? 0}</strong><small>Patterns worth checking next time</small></article>
       </div>
 
       <div className="feature-grid two-col">
-        <article className="panel-card">
-          <h4>Start a stitch record</h4>
+        <article className="panel-card stitch-create-card">
+          <div>
+            <p className="eyebrow">New garment</p>
+            <h4>Start a stitch record</h4>
+          </div>
           <label>Garment type
             <select value={garmentType} onChange={(event) => setGarmentType(event.target.value)}>
               {garments.map((garment) => <option key={garment.code} value={garment.code}>{garment.display_name}</option>)}
@@ -170,27 +185,34 @@ export function StitchingPanel({ customerId, customerName }: { customerId: numbe
           <button type="button" disabled={busy} onClick={() => void createRecord()}>Create stitch record</button>
         </article>
 
-        <article className="panel-card">
-          <h4>Fit memory</h4>
+        <article className="panel-card fit-memory-card">
+          <div>
+            <p className="eyebrow">Learned from history</p>
+            <h4>Fit memory for {selectedGarment?.display_name || 'this garment'}</h4>
+          </div>
           {insight?.recurring_feedback.length ? (
             <div className="insight-list">
               {insight.recurring_feedback.map((memory) => {
                 const [area, issue] = memory.split(':')
-                return <div key={memory} className="insight-chip"><strong>{pretty(area)}</strong> · {pretty(issue)}</div>
+                return <div key={memory} className="insight-chip"><strong>{pretty(area)}</strong><span>{pretty(issue)}</span></div>
               })}
             </div>
           ) : <p className="state">Recurring feedback appears after the same fit observation is recorded more than once.</p>}
-          <p className="state">Examples: sleeve too long, neckline too deep, waist too tight, shoulder too loose.</p>
+          <div className="fit-memory-callout">
+            <strong>Next-stitch check</strong>
+            <p>{insight?.recurring_feedback.length ? 'Review these learned signals with the customer before cutting. Do not silently alter historical measurements.' : 'No recurring adjustment is inferred yet. Keep collecting trial feedback.'}</p>
+          </div>
         </article>
       </div>
 
       {selectedRecord && (
         <div className="feature-grid two-col">
-          <article className="panel-card">
+          <article className="panel-card stitch-record-card">
             <div className="section-head">
               <div>
+                <p className="eyebrow">Selected stitch</p>
                 <h4>{selectedGarment?.display_name || pretty(selectedRecord.garment_type_code)}</h4>
-                <p className="state">Record #{selectedRecord.id}</p>
+                <p className="state">Record #{selectedRecord.id}{selectedRecord.tailor_name ? ` · ${selectedRecord.tailor_name}` : ''}</p>
               </div>
               <select value={selectedRecord.id} onChange={(event) => setSelectedRecordId(Number(event.target.value))}>
                 {records.map((record) => <option key={record.id} value={record.id}>#{record.id} · {pretty(record.garment_type_code)}</option>)}
@@ -204,10 +226,14 @@ export function StitchingPanel({ customerId, customerName }: { customerId: numbe
             <div className="measurement-tags">
               {selectedGarment?.measurement_fields.map((field) => <span key={field} className="badge">{pretty(field)}</span>)}
             </div>
+            {selectedRecord.style_notes && <div className="stitch-note"><span>Style brief</span><p>{selectedRecord.style_notes}</p></div>}
           </article>
 
-          <article className="panel-card">
-            <h4>Add trial feedback</h4>
+          <article className="panel-card trial-feedback-card">
+            <div>
+              <p className="eyebrow">Trial / alteration</p>
+              <h4>Add structured fit feedback</h4>
+            </div>
             <div className="form-grid">
               <label>Area
                 <select value={fitArea} onChange={(event) => setFitArea(event.target.value as FitArea)}>
@@ -231,28 +257,33 @@ export function StitchingPanel({ customerId, customerName }: { customerId: numbe
             <label>Comment
               <textarea value={comment} onChange={(event) => setComment(event.target.value)} placeholder="Sleeve felt about half an inch too long at trial." />
             </label>
-            <button type="button" disabled={busy} onClick={() => void saveFeedback()}>Save fit feedback</button>
+            <button type="button" disabled={busy} onClick={() => void saveFeedback()}>Remember this fit feedback</button>
           </article>
         </div>
       )}
 
-      <div className="table-wrap">
-        <table>
-          <thead><tr><th>Garment</th><th>Stage</th><th>Area</th><th>Feedback</th><th>Severity</th><th>Adjustment</th></tr></thead>
-          <tbody>
-            {records.flatMap((record) => record.feedback.map((feedback) => (
-              <tr key={feedback.id}>
-                <td>{pretty(record.garment_type_code)}</td>
-                <td>{pretty(record.status)}</td>
-                <td>{pretty(feedback.fit_area)}</td>
-                <td>{pretty(feedback.direction)}{feedback.comment ? ` · ${feedback.comment}` : ''}</td>
-                <td>{pretty(feedback.severity)}</td>
-                <td>{feedback.adjustment_value ? `${feedback.adjustment_value} ${feedback.adjustment_unit || ''}` : '-'}</td>
-              </tr>
-            )))}
-            {records.every((record) => record.feedback.length === 0) && <tr><td colSpan={6}>No fit feedback yet.</td></tr>}
-          </tbody>
-        </table>
+      <div className="feedback-history-card">
+        <div className="section-head">
+          <div><p className="eyebrow">Customer history</p><h4>Fit observations across stitches</h4></div>
+          <span className="feedback-count">{records.flatMap((record) => record.feedback).length} observations</span>
+        </div>
+        <div className="feedback-list">
+          {records.flatMap((record) => record.feedback.map((feedback) => (
+            <article key={feedback.id} className={feedback.resolved ? 'feedback-row resolved' : 'feedback-row'}>
+              <div className={`severity-dot ${feedback.severity.toLowerCase()}`} aria-hidden="true" />
+              <div className="feedback-main">
+                <div className="feedback-heading">
+                  <strong>{feedbackSentence(feedback)}</strong>
+                  <span>{pretty(record.garment_type_code)} · Record #{record.id}</span>
+                </div>
+                {feedback.comment && <p>{feedback.comment}</p>}
+                <small>{pretty(feedback.severity)} · {feedback.resolved ? 'Resolved for this stitch' : 'Open fit memory'}</small>
+              </div>
+              <button type="button" className="secondary-action" disabled={busy} onClick={() => void toggleResolved(feedback)}>{feedback.resolved ? 'Reopen' : 'Mark resolved'}</button>
+            </article>
+          )))}
+          {records.every((record) => record.feedback.length === 0) && <div className="client-empty">No fit feedback yet. Add the first trial observation above.</div>}
+        </div>
       </div>
     </section>
   )
