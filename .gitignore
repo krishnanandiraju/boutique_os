@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Local databases and media
+*.db
+*.sqlite
+*.sqlite3
+backend/data/media/
+
+# Environment
+.env
+backend/.env
+frontend/.env
+
+# Node/Vite
+frontend/node_modules/
+frontend/dist/
+
+# IDE/OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

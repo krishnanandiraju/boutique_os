@@ -11,6 +11,9 @@ from app.core.config import settings
 from app.db import Base, SessionLocal, engine
 from app.seed import seed_data
 from app.services.inventory_service import DomainError
+from app.stitching.demo_seed import seed_demo_fit_memory
+from app.stitching.routes import router as stitching_router
+from app.stitching.service import seed_garment_definitions
 
 logger = logging.getLogger("boutiqueos")
 
@@ -48,6 +51,8 @@ async def lifespan(app: FastAPI):
     db = SessionLocal()
     try:
         seed_data(db)
+        seed_garment_definitions(db)
+        seed_demo_fit_memory(db)
     finally:
         db.close()
     yield
@@ -117,6 +122,7 @@ def create_app() -> FastAPI:
         )
 
     app.include_router(router)
+    app.include_router(stitching_router)
     return app
 
 
