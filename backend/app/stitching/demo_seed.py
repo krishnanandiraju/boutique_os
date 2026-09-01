@@ -168,8 +168,8 @@ def seed_demo_fit_memory(db: Session) -> None:
         direction=FitDirection.TOO_LONG,
         severity=FeedbackSeverity.MINOR,
         adjustment_value=Decimal("0.500"),
-        comment="Again feels about half an inch too long; confirm shorter sleeve before final finish.",
-        resolved=False,
+        comment="Again felt about half an inch too long at trial; shortened before final finish.",
+        resolved=True,
     )
 
     db.commit()
