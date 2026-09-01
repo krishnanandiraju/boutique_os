@@ -296,7 +296,7 @@ export default function ClientDemoWorkspace() {
                     data={customers.map((customer) => ({ value: customer.id.toString(), label: `${customer.name} · ${customer.phone}` }))}
                     searchable
                     size="md"
-                    alignSelf="end"
+                    style={{ alignSelf: 'end' }}
                   />
                 </SimpleGrid>
               </Paper>
