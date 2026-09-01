@@ -1,0 +1,76 @@
+.stitching-feature {
+  display: grid;
+  gap: 1rem;
+}
+
+.stitching-feature .eyebrow {
+  margin: 0 0 .25rem;
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  opacity: .7;
+}
+
+.feature-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.feature-grid.two-col {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.panel-card {
+  border: 1px solid var(--border, #d9d9df);
+  border-radius: 14px;
+  background: var(--panel, #fff);
+  padding: 1rem;
+  display: grid;
+  gap: .8rem;
+}
+
+.panel-card label {
+  display: grid;
+  gap: .35rem;
+  font-size: .85rem;
+  font-weight: 600;
+}
+
+.panel-card input,
+.panel-card select,
+.panel-card textarea {
+  width: 100%;
+}
+
+.panel-card textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .75rem;
+}
+
+.insight-list,
+.measurement-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45rem;
+}
+
+.insight-chip {
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: .35rem .65rem;
+  font-size: .82rem;
+}
+
+@media (max-width: 800px) {
+  .feature-grid.two-col,
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
