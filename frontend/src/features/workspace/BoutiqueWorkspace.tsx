@@ -23,7 +23,7 @@ import {
 import { useDisclosure } from '@mantine/hooks'
 import {
   BarChart3,
-  ClipboardRuler,
+  Ruler,
   LayoutDashboard,
   PackageCheck,
   Settings,
@@ -82,7 +82,7 @@ function Dashboard({ dashboard, onMeasurements, onWorkbench }: {
           <Title order={1}>Today</Title>
         </Box>
         <Group>
-          <Button variant="light" color="grape" leftSection={<ClipboardRuler size={17} />} onClick={onMeasurements}>Take measurements</Button>
+          <Button variant="light" color="grape" leftSection={<Ruler size={17} />} onClick={onMeasurements}>Take measurements</Button>
           <Button color="grape" leftSection={<ShoppingBag size={17} />} onClick={onWorkbench}>Open workbench</Button>
         </Group>
       </Group>
@@ -358,7 +358,7 @@ export default function BoutiqueWorkspace() {
                 <Tabs.List>
                   <Tabs.Tab value="Dashboard" leftSection={<LayoutDashboard size={15} />}>Dashboard</Tabs.Tab>
                   <Tabs.Tab value="Workbench" leftSection={<PackageCheck size={15} />}>Products, customers & orders</Tabs.Tab>
-                  <Tabs.Tab value="Measurements" leftSection={<ClipboardRuler size={15} />}>Measurements</Tabs.Tab>
+                  <Tabs.Tab value="Measurements" leftSection={<Ruler size={15} />}>Measurements</Tabs.Tab>
                 </Tabs.List>
               </Tabs>
 
@@ -385,3 +385,4 @@ export default function BoutiqueWorkspace() {
     </AppShell>
   )
 }
+
