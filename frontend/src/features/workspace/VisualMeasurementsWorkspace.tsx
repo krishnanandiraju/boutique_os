@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Alert, Badge, Box, Button, Card, Collapse, Group, Paper, Select, SimpleGrid, Stack, Text, TextInput, Title } from '@mantine/core'
+import { Alert, Badge, Box, Button, Card, Group, Paper, Select, SimpleGrid, Stack, Text, TextInput, Title } from '@mantine/core'
 import { ChevronDown, ChevronUp, History, Ruler } from 'lucide-react'
 import { api } from '../../api'
 import type { Customer, MeasurementProfile, MeasurementProfileDetail } from '../../types'
@@ -250,7 +250,7 @@ export function VisualMeasurementsWorkspace({ customers }: { customers: Customer
         )}
       </Paper>
 
-      <Collapse in={historyOpen}>
+      {historyOpen && (
         <Paper withBorder p="md">
           <Group justify="space-between" mb="sm">
             <Text fw={800}>Measurement history</Text>
@@ -268,7 +268,7 @@ export function VisualMeasurementsWorkspace({ customers }: { customers: Customer
             ))}
           </SimpleGrid>
         </Paper>
-      </Collapse>
+      )}
 
       <SimpleGrid cols={{ base: 1, lg: 5 }} spacing="lg">
         <Paper withBorder p="lg" className="measurement-form-card" style={{ gridColumn: 'span 3' }}>
