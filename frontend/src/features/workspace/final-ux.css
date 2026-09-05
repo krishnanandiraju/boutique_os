@@ -1,0 +1,120 @@
+.merchandising-toolbar {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.merchandising-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.merch-card {
+  overflow: hidden;
+  border-radius: 20px;
+  border: 1px solid #e8e8ef;
+  background: #fff;
+  transition: transform 140ms ease, box-shadow 140ms ease;
+}
+
+.merch-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 36px rgba(35, 26, 45, .09);
+}
+
+.merch-visual {
+  min-height: 210px;
+  padding: 20px;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  background:
+    radial-gradient(circle at 76% 20%, rgba(255,255,255,.8), transparent 22%),
+    linear-gradient(145deg, #f8ecfb, #f2f4fb 55%, #eef8f5);
+}
+
+.merch-visual.fabric { background: linear-gradient(145deg, #f8f0e7, #f4e9dc 48%, #f5f0fb); }
+.merch-visual.saree { background: linear-gradient(145deg, #fbebf2, #f8e5f7 48%, #eeeafa); }
+.merch-visual.kurta { background: linear-gradient(145deg, #eaf5fb, #edf1fb 52%, #f8effb); }
+.merch-visual.blouse { background: linear-gradient(145deg, #f9eafa, #f5effb 52%, #eef5fb); }
+.merch-visual.lehenga { background: linear-gradient(145deg, #f9e7f1, #f7eef9 45%, #fff3e6); }
+
+.merch-visual-icon {
+  position: absolute;
+  right: 24px;
+  top: 28px;
+  width: 116px;
+  height: 116px;
+  border-radius: 34px;
+  display: grid;
+  place-items: center;
+  background: rgba(255,255,255,.62);
+  color: var(--mantine-color-grape-7);
+  transform: rotate(-5deg);
+}
+
+.merch-meta { padding: 16px 18px 18px; }
+
+.customer-table-card {
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid #e7e8ee;
+  background: white;
+}
+
+.customer-table-card table { min-width: 880px; }
+.customer-table-card th { background: #f8f8fb; color: #686a77; font-size: 12px; text-transform: uppercase; letter-spacing: .03em; }
+.customer-table-card td, .customer-table-card th { padding: 14px 16px; }
+.customer-row-name { font-weight: 800; }
+
+.smart-search {
+  position: relative;
+}
+
+.smart-search-results {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 40;
+  max-height: 320px;
+  overflow: auto;
+  border: 1px solid #e3e4eb;
+  border-radius: 14px;
+  background: white;
+  box-shadow: 0 18px 44px rgba(29, 24, 36, .14);
+  padding: 6px;
+}
+
+.smart-search-result {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+
+.smart-search-result:hover, .smart-search-result:focus-visible {
+  background: var(--mantine-color-grape-0);
+  outline: none;
+}
+
+.smart-search-empty { padding: 18px 12px; text-align: center; color: var(--mantine-color-gray-6); }
+
+@media (max-width: 62em) {
+  .merchandising-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 48em) {
+  .merchandising-grid { grid-template-columns: 1fr; }
+  .merch-visual { min-height: 180px; }
+  .merch-visual-icon { width: 94px; height: 94px; right: 18px; }
+}
