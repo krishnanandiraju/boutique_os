@@ -75,7 +75,7 @@ export function VisualMeasurementsWorkspaceV3({ customers }: { customers: Custom
   const [error, setError] = useState('')
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
-  useEffect(() => { void acceptanceApi.tenantProfile().then((result) => { setTenant(result); if (!profile && result.garment_types[0]) setGarment(result.garment_types[0]) }).catch(() => undefined) }, [])
+  useEffect(() => { void acceptanceApi.tenantProfile().then((result) => { setTenant(result); setGarment((current) => result.garment_types.includes(current) ? current : result.garment_types[0] || current) }).catch(() => undefined) }, [])
   useEffect(() => {
     if (!effectiveCustomerId) return
     let active = true
