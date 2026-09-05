@@ -1,0 +1,125 @@
+name: Deploy BoutiqueOS to Azure
+
+on:
+  workflow_run:
+    workflows: ["Quality Gates"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: boutiqueos-production
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    environment: production
+
+    env:
+      RESOURCE_GROUP: rg-boutiqueos-demo
+      WEBAPP_NAME: boutiqueos-api-4746
+      STORAGE_ACCOUNT: boutiqueos7283257022
+      API_URL: https://boutiqueos-api-4746.azurewebsites.net
+      FRONTEND_URL: https://boutiqueos7283257022.z29.web.core.windows.net
+
+    steps:
+      - name: Checkout tested revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.workflow_run.head_sha }}
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Prepare backend package
+        run: |
+          cd backend
+          zip -r ../backend.zip . \
+            -x "boutiqueos.db" \
+               "*.pyc" \
+               "*/__pycache__/*" \
+               ".pytest_cache/*" \
+               "tests/*"
+
+      - name: Deploy FastAPI backend
+        run: |
+          az webapp config appsettings set \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "$WEBAPP_NAME" \
+            --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true ENVIRONMENT=production \
+            --output none
+
+          az webapp deploy \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "$WEBAPP_NAME" \
+            --src-path backend.zip \
+            --type zip \
+            --async false \
+            --output none
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build production frontend
+        working-directory: frontend
+        env:
+          VITE_API_BASE_URL: ${{ env.API_URL }}
+        run: |
+          npm ci
+          npm run build
+
+      - name: Deploy frontend to Azure Storage static website
+        run: |
+          STORAGE_KEY=$(az storage account keys list \
+            --resource-group "$RESOURCE_GROUP" \
+            --account-name "$STORAGE_ACCOUNT" \
+            --query '[0].value' -o tsv)
+
+          az storage blob upload-batch \
+            --account-name "$STORAGE_ACCOUNT" \
+            --account-key "$STORAGE_KEY" \
+            --destination '$web' \
+            --source frontend/dist \
+            --overwrite \
+            --output none
+
+      - name: Keep backend CORS aligned with production frontend
+        run: |
+          az webapp config appsettings set \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "$WEBAPP_NAME" \
+            --settings CORS_ORIGINS="$FRONTEND_URL" \
+            --output none
+
+          az webapp restart \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "$WEBAPP_NAME" \
+            --output none
+
+      - name: Verify production
+        run: |
+          for attempt in {1..12}; do
+            if curl --fail --silent --show-error "$API_URL/health"; then
+              echo
+              break
+            fi
+            if [ "$attempt" -eq 12 ]; then
+              echo "Backend health check failed after retries"
+              exit 1
+            fi
+            sleep 10
+          done
+
+          curl --fail --silent --show-error "$FRONTEND_URL/" > /dev/null
+          echo "BoutiqueOS production deployment verified"
