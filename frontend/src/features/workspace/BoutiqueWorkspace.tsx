@@ -5,9 +5,11 @@ import { BarChart3, LayoutDashboard, Package, Ruler, Scissors, Settings, Shoppin
 import { api } from '../../api'
 import type { Customer, DashboardData, Order } from '../../types'
 import { IntegrationsPanel } from '../integrations/IntegrationsPanel'
-import { GuidedOrdersWorkspaceV2 } from './GuidedOrdersWorkspaceV2'
-import { VisualMeasurementsWorkspace } from './VisualMeasurementsWorkspace'
-import { CustomersWorkspace, ProductsWorkspace, TailoringWorkspace } from './OperationsWorkspaces'
+import { CatalogWorkspaceV3 } from './CatalogWorkspaceV3'
+import { GuidedOrdersWorkspaceV3 } from './GuidedOrdersWorkspaceV3'
+import { TenantSettingsPanel } from './TenantSettingsPanel'
+import { VisualMeasurementsWorkspaceV3 } from './VisualMeasurementsWorkspaceV3'
+import { CustomersWorkspace, TailoringWorkspace } from './OperationsWorkspaces'
 import './boutique-workspace.css'
 
 type Area = 'Dashboard' | 'Products' | 'Customers' | 'Orders' | 'Measurements' | 'Tailoring' | 'Reporting' | 'Admin'
@@ -49,16 +51,18 @@ export default function BoutiqueWorkspace() {
   const [orders, setOrders] = useState<Order[]>([])
   const [error, setError] = useState('')
 
-  useEffect(() => { void Promise.all([api.dashboard(), api.customers(), api.orders()]).then(([d, c, o]) => { setDashboard(d); setCustomers(c); setOrders(o) }).catch(() => setError('Unable to load BoutiqueOS')) }, [])
+  function refreshOperations() {
+    void Promise.all([api.dashboard(), api.customers(), api.orders()]).then(([d, c, o]) => { setDashboard(d); setCustomers(c); setOrders(o) }).catch(() => setError('Unable to load BoutiqueOS'))
+  }
+  useEffect(refreshOperations, [])
 
   function go(next: Area) { setArea(next); close() }
-  function handleCreated(order: Order) { setOrders((current) => [order, ...current]); void api.dashboard().then(setDashboard).catch(() => undefined) }
   function handleCustomerCreated(customer: Customer) { setCustomers((current) => [customer, ...current]) }
 
   return <AppShell header={{ height: 68 }} navbar={{ width: 230, breakpoint: 'md', collapsed: { mobile: !opened } }} padding="md" className="boutique-workspace">
     <AppShell.Header className="boutique-header"><Group h="100%" px="md" justify="space-between"><Group gap="sm"><Burger opened={opened} onClick={toggle} hiddenFrom="md" size="sm" aria-label="Open navigation" /><ThemeIcon size={40} radius="md" color="grape"><Store size={21} /></ThemeIcon><Box><Text fw={900} size="lg">BoutiqueOS</Text><Text size="xs" c="dimmed">Meera Boutique</Text></Box></Group><Badge variant="dot" color="teal" visibleFrom="sm">Online</Badge></Group></AppShell.Header>
     <AppShell.Navbar p="md" className="boutique-navbar"><Stack h="100%" gap={4}>{nav.map((item) => { const Icon = item.icon; return <NavLink key={item.area} active={area === item.area} label={item.label} leftSection={<Icon size={18} />} onClick={() => go(item.area)} color="grape" variant="light" /> })}<Divider my="sm"/><NavLink active={area === 'Reporting'} label="Reporting" leftSection={<BarChart3 size={18}/>} onClick={() => go('Reporting')} color="grape" variant="light"/><NavLink active={area === 'Admin'} label="Admin" leftSection={<Settings size={18}/>} onClick={() => go('Admin')} color="grape" variant="light"/></Stack></AppShell.Navbar>
-    <AppShell.Main><Box className="boutique-page">{error && <Alert color="red" mb="md" title="Unable to load operations">We couldn't connect to BoutiqueOS. Please try again.</Alert>}{area === 'Dashboard' && <Dashboard dashboard={dashboard} onNavigate={go} />}{area === 'Products' && <ProductsWorkspace />}{area === 'Customers' && <CustomersWorkspace customers={customers} onCreated={handleCustomerCreated} />}{area === 'Orders' && <GuidedOrdersWorkspaceV2 customers={customers} orders={orders} onCreated={handleCreated} />}{area === 'Measurements' && <VisualMeasurementsWorkspace customers={customers} />}{area === 'Tailoring' && <TailoringWorkspace />}{area === 'Reporting' && <Reporting dashboard={dashboard} orders={orders} />}{area === 'Admin' && <Stack gap="lg"><Box><Text size="sm" c="dimmed">Admin</Text><Title order={1}>Settings & connections</Title></Box><SimpleGrid cols={{ base: 1, md: 2 }}><Card withBorder padding="lg"><Group><ThemeIcon variant="light" color="grape"><Store size={18} /></ThemeIcon><Box><Text fw={700}>Boutique</Text><Text size="sm" c="dimmed">Meera Boutique</Text></Box></Group></Card><Card withBorder padding="lg"><Group><ThemeIcon variant="light" color="grape"><Users size={18} /></ThemeIcon><Box><Text fw={700}>Staff & access</Text><Text size="sm" c="dimmed">User administration will live here.</Text></Box></Group></Card></SimpleGrid><IntegrationsPanel /></Stack>}</Box></AppShell.Main>
+    <AppShell.Main><Box className="boutique-page">{error && <Alert color="red" mb="md" title="Unable to load operations">We couldn't connect to BoutiqueOS. Please try again.</Alert>}{area === 'Dashboard' && <Dashboard dashboard={dashboard} onNavigate={go} />}{area === 'Products' && <CatalogWorkspaceV3 />}{area === 'Customers' && <CustomersWorkspace customers={customers} onCreated={handleCustomerCreated} />}{area === 'Orders' && <GuidedOrdersWorkspaceV3 customers={customers} orders={orders} onCreated={refreshOperations} />}{area === 'Measurements' && <VisualMeasurementsWorkspaceV3 customers={customers} />}{area === 'Tailoring' && <TailoringWorkspace />}{area === 'Reporting' && <Reporting dashboard={dashboard} orders={orders} />}{area === 'Admin' && <Stack gap="lg"><Box><Text size="sm" c="dimmed">Admin</Text><Title order={1}>Settings & connections</Title></Box><TenantSettingsPanel/><SimpleGrid cols={{ base: 1, md: 2 }}><Card withBorder padding="lg"><Group><ThemeIcon variant="light" color="grape"><Store size={18} /></ThemeIcon><Box><Text fw={700}>Boutique</Text><Text size="sm" c="dimmed">Meera Boutique</Text></Box></Group></Card><Card withBorder padding="lg"><Group><ThemeIcon variant="light" color="grape"><Users size={18} /></ThemeIcon><Box><Text fw={700}>Staff & access</Text><Text size="sm" c="dimmed">User administration will live here.</Text></Box></Group></Card></SimpleGrid><IntegrationsPanel /></Stack>}</Box></AppShell.Main>
     <Box className="mobile-bottom-nav" hiddenFrom="md">{nav.slice(0, 5).map((item) => { const Icon = item.icon; return <button key={item.area} className={area === item.area ? 'active' : ''} onClick={() => go(item.area)}><Icon size={19}/><span>{item.area === 'Dashboard' ? 'Home' : item.label}</span></button> })}</Box>
   </AppShell>
 }
