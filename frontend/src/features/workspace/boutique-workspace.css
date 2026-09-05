@@ -24,12 +24,124 @@
   overflow: hidden;
 }
 
-.measurement-form-card {
+/* The legacy workbench is embedded only for operational CRUD.
+   Integrations are owned by Admin in the new shell. */
+.embedded-workbench .sidebar nav .nav-btn:last-child {
+  display: none;
+}
+
+.measurement-form-card,
+.measurement-guide-card {
   min-height: 460px;
+}
+
+.measurement-figure {
+  min-height: 330px;
+  border: 1px solid #ececf0;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #fbf9fc 0%, #f6f3f8 100%);
+  display: grid;
+  place-items: center;
+  padding: 12px;
+}
+
+.measurement-guide-svg {
+  width: min(100%, 330px);
+  height: auto;
+  max-height: 390px;
+}
+
+.garment-silhouette {
+  fill: #f2eaf4;
+  stroke: #5f4b66;
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+}
+
+.garment-head {
+  fill: #f4eee8;
+  stroke: #766a72;
+  stroke-width: 1;
+}
+
+.garment-detail {
+  fill: none;
+  stroke: #766a72;
+  stroke-width: 1;
+}
+
+.guide-line line {
+  stroke: #766a72;
+  stroke-width: 1.1;
+  stroke-dasharray: 2 1.5;
+}
+
+.guide-line circle {
+  fill: #ffffff;
+  stroke: #766a72;
+  stroke-width: 1;
+}
+
+.guide-line text {
+  font-size: 3.5px;
+  font-weight: 800;
+  fill: #4d3f51;
+  pointer-events: none;
+}
+
+.guide-line.active line {
+  stroke: var(--mantine-color-grape-6);
+  stroke-width: 2;
+  stroke-dasharray: none;
+}
+
+.guide-line.active circle {
+  fill: var(--mantine-color-grape-6);
+  stroke: var(--mantine-color-grape-8);
+}
+
+.guide-line.active text {
+  fill: white;
+}
+
+.guide-instruction {
+  width: 100%;
+  border-radius: 10px;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.guide-instruction:hover,
+.guide-instruction.active {
+  background: var(--mantine-color-grape-0);
+  border-color: var(--mantine-color-grape-2);
+}
+
+.guide-number {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 26px;
+  background: var(--mantine-color-grape-0);
+  color: var(--mantine-color-grape-7);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.guide-instruction.active .guide-number {
+  background: var(--mantine-color-grape-6);
+  color: white;
 }
 
 @media (max-width: 62em) {
   .boutique-page {
     padding-top: 0;
+  }
+
+  .measurement-figure {
+    min-height: 260px;
   }
 }
