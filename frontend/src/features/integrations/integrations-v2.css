@@ -1,0 +1,90 @@
+.integrations-v2 {
+  width: 100%;
+}
+
+.integration-category-control {
+  align-self: flex-start;
+  max-width: 100%;
+  overflow-x: auto;
+  background: #fff;
+  border: 1px solid #e7e8ee;
+  padding: 4px;
+  box-shadow: 0 6px 20px rgba(34, 28, 44, 0.03);
+}
+
+.integration-surface-card,
+.integration-activity-card {
+  border-color: #e7e8ee;
+  background: #fff;
+  box-shadow: 0 8px 28px rgba(34, 28, 44, 0.04);
+}
+
+.integration-surface-card {
+  min-height: 178px;
+  transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+}
+
+.integration-surface-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--mantine-color-grape-2);
+  box-shadow: 0 12px 32px rgba(34, 28, 44, 0.08);
+}
+
+.integration-status-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--mantine-color-gray-5);
+}
+
+.integration-status-dot.connected {
+  background: var(--mantine-color-teal-6);
+}
+
+.integration-status-dot.available {
+  background: var(--mantine-color-grape-5);
+}
+
+.integration-empty-state {
+  min-height: 150px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  text-align: center;
+  border: 1px dashed #d9d8df;
+  border-radius: 14px;
+  background: #fafafd;
+}
+
+@media (max-width: 62em) {
+  .integration-category-control {
+    width: 100%;
+  }
+}
+
+@media (max-width: 48em) {
+  .integrations-v2 > .mantine-Group-root:first-child {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .integrations-v2 > .mantine-Group-root:first-child > .mantine-Group-root {
+    width: 100%;
+  }
+
+  .integrations-v2 > .mantine-Group-root:first-child .mantine-Button-root {
+    flex: 1;
+  }
+
+  .integration-category-control {
+    width: 100%;
+    display: block;
+    white-space: nowrap;
+  }
+
+  .integration-surface-card {
+    min-height: auto;
+  }
+}
