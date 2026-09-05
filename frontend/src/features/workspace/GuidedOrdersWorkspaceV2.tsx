@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ActionIcon, Alert, Badge, Box, Button, Card, Checkbox, Group, Paper, Select, Stack, Text, TextInput, ThemeIcon, Title } from '@mantine/core'
-import { ArrowLeft, ArrowRight, Check, Minus, Package, Plus, Ruler, Search, ShoppingBag, UserRound, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Minus, Package, Plus, Search, ShoppingBag, UserRound, X } from 'lucide-react'
 import { api } from '../../api'
 import type { Customer, Item, MeasurementProfile, Order } from '../../types'
 import './final-ux.css'
@@ -53,7 +53,7 @@ export function GuidedOrdersWorkspaceV2({ customers, orders, onCreated }: { cust
 
   useEffect(() => { void api.items().then(setItems).catch(() => setError('Unable to load products.')) }, [])
   useEffect(() => {
-    if (!customer) { setProfiles([]); return }
+    if (!customer) return
     let active = true
     void api.customerMeasurementProfiles(customer.id).then((rows) => { if (active) setProfiles(rows) }).catch(() => { if (active) setProfiles([]) })
     return () => { active = false }
@@ -62,6 +62,11 @@ export function GuidedOrdersWorkspaceV2({ customers, orders, onCreated }: { cust
   const orderableItems = useMemo(() => items.filter((item) => item.inventory_type === 'UNIQUE' ? ['AVAILABLE', 'HELD'].includes(item.availability) : Number(item.quantity_available) > 0), [items])
   const total = cart.reduce((sum, line) => sum + Number(line.item.selling_price) * line.quantity, 0)
   const recentOrders = customer ? orders.filter((order) => order.customer_id === customer.id).sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 3) : []
+
+  function handleCustomerPick(next: Customer | null) {
+    setProfiles([])
+    setCustomer(next)
+  }
 
   function addItem() {
     if (!selectedItem) return
@@ -86,7 +91,7 @@ export function GuidedOrdersWorkspaceV2({ customers, orders, onCreated }: { cust
     setSubmitting(true); setError(''); setSuccess('')
     try {
       const created = await api.createOrder({ customer_id: customer.id, lines: cart.map((line) => ({ item_id: line.item.id, quantity: String(line.quantity), requires_tailoring: line.requiresTailoring, measurement_profile_id: line.measurementProfileId, measurement_version_id: line.measurementVersionId })) })
-      onCreated(created); setSuccess(`Order #${created.id} created.`); setCart([]); setCustomer(null); setProfiles([]); setStep(0)
+      onCreated(created); setSuccess(`Order #${created.id} created.`); setCart([]); handleCustomerPick(null); setStep(0)
     } catch (err) { setError(err instanceof Error ? err.message : 'Unable to create order.') }
     finally { setSubmitting(false) }
   }
@@ -97,7 +102,7 @@ export function GuidedOrdersWorkspaceV2({ customers, orders, onCreated }: { cust
 
     <Paper withBorder p="sm" className="wizard-progress"><Group gap="xs" wrap="nowrap">{steps.map((label, index) => <Box key={label} className={`wizard-step ${index === step ? 'active' : ''} ${index < step ? 'complete' : ''}`} onClick={() => index < step && setStep(index)}><ThemeIcon size={30} radius="xl" color="grape" variant={index <= step ? 'filled' : 'light'}>{index < step ? <Check size={14}/> : <Text size="xs" fw={900}>{index + 1}</Text>}</ThemeIcon><Text size="sm" fw={index === step ? 800 : 600} visibleFrom="sm">{label}</Text></Box>)}</Group></Paper>
 
-    {step === 0 && <Paper withBorder p="lg" className="wizard-card"><Stack gap="lg"><Box><Text fw={800} size="lg">Who is this order for?</Text><Text size="sm" c="dimmed">Start typing. Recent customers appear before you search.</Text></Box><CustomerSearch customers={customers} value={customer} onPick={setCustomer} />{customer && <Card withBorder><Group justify="space-between"><Box><Text fw={900}>{customer.name}</Text><Text size="sm" c="dimmed">{customer.phone}</Text></Box><Badge variant="light" color="grape">{recentOrders.length} recent orders</Badge></Group>{recentOrders.length > 0 && <Group gap="xs" mt="sm">{recentOrders.map((order) => <Badge key={order.id} variant="outline" color="gray">#{order.id} · {money(order.total_amount)}</Badge>)}</Group>}</Card>}</Stack></Paper>}
+    {step === 0 && <Paper withBorder p="lg" className="wizard-card"><Stack gap="lg"><Box><Text fw={800} size="lg">Who is this order for?</Text><Text size="sm" c="dimmed">Start typing. Recent customers appear before you search.</Text></Box><CustomerSearch customers={customers} value={customer} onPick={handleCustomerPick} />{customer && <Card withBorder><Group justify="space-between"><Box><Text fw={900}>{customer.name}</Text><Text size="sm" c="dimmed">{customer.phone}</Text></Box><Badge variant="light" color="grape">{recentOrders.length} recent orders</Badge></Group>{recentOrders.length > 0 && <Group gap="xs" mt="sm">{recentOrders.map((order) => <Badge key={order.id} variant="outline" color="gray">#{order.id} · {money(order.total_amount)}</Badge>)}</Group>}</Card>}</Stack></Paper>}
 
     {step === 1 && <Paper withBorder p="lg" className="wizard-card"><Stack gap="lg"><Box><Text fw={800} size="lg">What are they buying?</Text><Text size="sm" c="dimmed">Search across name, SKU, fabric, colour and category.</Text></Box><ItemSearch items={orderableItems} value={selectedItem} onPick={setSelectedItem} />{selectedItem && <Card withBorder><Group justify="space-between"><Group><ThemeIcon color="grape" variant="light"><Package size={17}/></ThemeIcon><Box><Text fw={800}>{selectedItem.name}</Text><Text size="sm" c="dimmed">{quantityLabel(selectedItem)}</Text></Box></Group><Text fw={900}>{money(selectedItem.selling_price)}</Text></Group><Group justify="space-between" mt="md"><Group gap={0} className="quantity-control"><ActionIcon variant="default" onClick={() => setQuantity((v) => Math.max(1, v - 1))} disabled={selectedItem.inventory_type === 'UNIQUE'}><Minus size={14}/></ActionIcon><Text className="quantity-value">{selectedItem.inventory_type === 'UNIQUE' ? 1 : quantity}</Text><ActionIcon variant="default" onClick={() => setQuantity((v) => v + 1)} disabled={selectedItem.inventory_type === 'UNIQUE'}><Plus size={14}/></ActionIcon></Group><Button color="grape" onClick={addItem} leftSection={<Plus size={15}/>}>Add item</Button></Group></Card>}
       <Stack gap="sm">{cart.length === 0 && <Box className="empty-cart"><ShoppingBag size={28}/><Text fw={700}>No items added yet</Text></Box>}{cart.map((line) => <Card key={line.item.id} withBorder><Group justify="space-between"><Box><Text fw={800}>{line.item.name}</Text><Text size="sm" c="dimmed">Qty {line.quantity} · {line.item.inventory_type}</Text></Box><Group><Text fw={900}>{money(Number(line.item.selling_price) * line.quantity)}</Text><ActionIcon color="red" variant="subtle" onClick={() => setCart((rows) => rows.filter((row) => row.item.id !== line.item.id))}><X size={15}/></ActionIcon></Group></Group></Card>)}</Stack></Stack></Paper>}
