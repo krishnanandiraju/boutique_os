@@ -24,10 +24,13 @@
   overflow: hidden;
 }
 
-.measurement-form-card {
-  min-height: 460px;
+/* The legacy workbench is embedded only for operational CRUD.
+   Integrations are owned by Admin in the new shell. */
+.embedded-workbench .sidebar nav .nav-btn:last-child {
+  display: none;
 }
 
+.measurement-form-card,
 .measurement-guide-card {
   min-height: 460px;
 }
