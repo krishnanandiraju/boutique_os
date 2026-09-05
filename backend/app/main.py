@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 
 from app.api.routes import router
 from app.api.tailoring_lifecycle import router as tailoring_lifecycle_router
+from app.catalog_api import router as catalog_router
 from app.core.config import settings
 from app.db import Base, SessionLocal, engine
 from app.seed import seed_data
@@ -15,6 +16,7 @@ from app.services.inventory_service import DomainError
 from app.stitching.demo_seed import seed_demo_fit_memory
 from app.stitching.routes import router as stitching_router
 from app.stitching.service import seed_garment_definitions
+from app.system_api import router as system_router
 
 logger = logging.getLogger("boutiqueos")
 
@@ -98,9 +100,7 @@ def create_app() -> FastAPI:
                 code = "RESOURCE_NOT_FOUND"
             elif exc.status_code == 409:
                 code = "INVENTORY_CONFLICT"
-            elif exc.status_code == 400:
-                code = "INVALID_INPUT"
-            elif exc.status_code == 422:
+            elif exc.status_code in {400, 422}:
                 code = "INVALID_INPUT"
             else:
                 code = "HTTP_ERROR"
@@ -123,6 +123,8 @@ def create_app() -> FastAPI:
         )
 
     app.include_router(router)
+    app.include_router(catalog_router)
+    app.include_router(system_router)
     app.include_router(tailoring_lifecycle_router)
     app.include_router(stitching_router)
     return app
