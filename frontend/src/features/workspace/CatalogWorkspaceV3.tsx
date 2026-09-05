@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ActionIcon, Alert, Badge, Box, Button, Card, Checkbox, FileButton, Group, Image, Modal, NumberInput, Paper, Select, SimpleGrid, Stack, Switch, Text, TextInput, Textarea, Title } from '@mantine/core'
+import { ActionIcon, Alert, Badge, Box, Button, Card, FileButton, Group, Image, Modal, NumberInput, Paper, Select, SimpleGrid, Stack, Switch, Text, TextInput, Textarea, Title } from '@mantine/core'
 import { Camera, ChevronLeft, ChevronRight, ImagePlus, PackagePlus, Plus, Trash2, X } from 'lucide-react'
 import { acceptanceApi, absoluteMediaUrl, type AudienceSegment, type ProductView, type VariantSeed } from '../../acceptanceApi'
 import type { InventoryType } from '../../types'
