@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Alert, Badge, Box, Button, Card, Group, Modal, Paper, Select, Stack, Table, Text, TextInput, ThemeIcon, Title } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
-import { Check, Layers3, Package, Plus, Scissors, Search, Shirt, Sparkles, UserPlus } from 'lucide-react'
+import { Check, Layers3, Plus, Scissors, Search, Shirt, Sparkles, UserPlus } from 'lucide-react'
 import { api } from '../../api'
 import type { Customer, Item, Order, TailoringStage, TailoringTask } from '../../types'
 import './final-ux.css'
