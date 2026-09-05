@@ -6,6 +6,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.acceptance_api import router as acceptance_router
 from app.api.routes import router
 from app.api.tailoring_lifecycle import router as tailoring_lifecycle_router
 from app.catalog_api import router as catalog_router
@@ -124,6 +125,7 @@ def create_app() -> FastAPI:
 
     app.include_router(router)
     app.include_router(catalog_router)
+    app.include_router(acceptance_router)
     app.include_router(system_router)
     app.include_router(tailoring_lifecycle_router)
     app.include_router(stitching_router)
