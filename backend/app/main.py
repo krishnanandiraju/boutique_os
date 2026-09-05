@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api.routes import router
+from app.api.tailoring_lifecycle import router as tailoring_lifecycle_router
 from app.core.config import settings
 from app.db import Base, SessionLocal, engine
 from app.seed import seed_data
@@ -122,6 +123,7 @@ def create_app() -> FastAPI:
         )
 
     app.include_router(router)
+    app.include_router(tailoring_lifecycle_router)
     app.include_router(stitching_router)
     return app
 
