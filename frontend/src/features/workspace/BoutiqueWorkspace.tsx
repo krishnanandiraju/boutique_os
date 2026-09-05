@@ -6,22 +6,23 @@ import App from '../../App'
 import { api } from '../../api'
 import type { Customer, DashboardData, Order } from '../../types'
 import { IntegrationsPanel } from '../integrations/IntegrationsPanel'
+import { GuidedOrdersWorkspace } from './GuidedOrdersWorkspace'
 import { VisualMeasurementsWorkspace } from './VisualMeasurementsWorkspace'
 import './boutique-workspace.css'
 
 type PrimaryArea = 'Operations' | 'Reporting' | 'Admin'
-type OperationsView = 'Dashboard' | 'Workbench' | 'Measurements'
+type OperationsView = 'Dashboard' | 'Workbench' | 'Orders' | 'Measurements'
 
 function money(value: string | number) {
   const numeric = typeof value === 'string' ? Number(value) : value
   return `₹${numeric.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`
 }
 
-function Dashboard({ dashboard, onMeasurements, onWorkbench }: { dashboard: DashboardData | null; onMeasurements: () => void; onWorkbench: () => void }) {
+function Dashboard({ dashboard, onMeasurements, onOrders, onWorkbench }: { dashboard: DashboardData | null; onMeasurements: () => void; onOrders: () => void; onWorkbench: () => void }) {
   return <Stack gap="lg">
     <Group justify="space-between" align="flex-end">
       <Box><Text size="sm" c="dimmed">Meera Boutique</Text><Title order={1}>Today</Title></Box>
-      <Group><Button variant="light" color="grape" leftSection={<Ruler size={17} />} onClick={onMeasurements}>Take measurements</Button><Button color="grape" leftSection={<ShoppingBag size={17} />} onClick={onWorkbench}>Open workbench</Button></Group>
+      <Group><Button variant="light" color="grape" leftSection={<Ruler size={17} />} onClick={onMeasurements}>Take measurements</Button><Button color="grape" leftSection={<ShoppingBag size={17} />} onClick={onOrders}>New order</Button></Group>
     </Group>
     <SimpleGrid cols={{ base: 2, md: 4 }} spacing="md">
       <Card withBorder padding="lg"><Text size="xs" c="dimmed" tt="uppercase" fw={700}>Sales today</Text><Title order={3} mt={6}>{dashboard ? money(dashboard.sales_today) : '—'}</Title></Card>
@@ -33,6 +34,7 @@ function Dashboard({ dashboard, onMeasurements, onWorkbench }: { dashboard: Dash
       <Group justify="space-between" mb="md"><Title order={3}>Needs attention</Title><Badge variant="light" color="orange">Live operations</Badge></Group>
       <Stack gap="sm"><Group justify="space-between"><Text>Tailoring work in progress</Text><Text fw={700}>{dashboard?.tailoring_pending ?? '—'}</Text></Group><Divider /><Group justify="space-between"><Text>Unique pieces currently held</Text><Text fw={700}>{dashboard?.held_items ?? '—'}</Text></Group><Divider /><Group justify="space-between"><Text>Low-stock items</Text><Text fw={700}>{dashboard?.low_stock_items ?? '—'}</Text></Group><Divider /><Group justify="space-between"><Text>Fabric remnants</Text><Text fw={700}>{dashboard?.remnant_rolls ?? '—'}</Text></Group></Stack>
     </Paper>
+    <Button variant="subtle" color="gray" onClick={onWorkbench} w="fit-content">Open products & customer workbench</Button>
   </Stack>
 }
 
@@ -66,15 +68,21 @@ export default function BoutiqueWorkspace() {
 
   function go(next: PrimaryArea) { setArea(next); close() }
 
+  function handleCreated(order: Order) {
+    setOrders((current) => [order, ...current])
+    void api.dashboard().then(setDashboard).catch(() => undefined)
+  }
+
   return <AppShell header={{ height: 68 }} navbar={{ width: 248, breakpoint: 'md', collapsed: { mobile: !opened } }} padding="md" className="boutique-workspace">
     <AppShell.Header className="boutique-header"><Group h="100%" px="md" justify="space-between"><Group gap="sm"><Burger opened={opened} onClick={toggle} hiddenFrom="md" size="sm" aria-label="Open navigation" /><ThemeIcon size={40} radius="md" color="grape"><Store size={21} /></ThemeIcon><Box><Text fw={800} size="lg">BoutiqueOS</Text><Text size="xs" c="dimmed">Meera Boutique</Text></Box></Group><Badge variant="dot" color="teal" visibleFrom="sm">Online</Badge></Group></AppShell.Header>
     <AppShell.Navbar p="md" className="boutique-navbar"><Stack h="100%" gap="xs"><Text size="xs" fw={700} c="dimmed" tt="uppercase" mb={4}>Workspace</Text><NavLink active={area === 'Operations'} label="Operations" description="Daily boutique work" leftSection={<ShoppingBag size={18} />} onClick={() => go('Operations')} color="grape" variant="light" /><NavLink active={area === 'Reporting'} label="Reporting" description="Business performance" leftSection={<BarChart3 size={18} />} onClick={() => go('Reporting')} color="grape" variant="light" /><NavLink active={area === 'Admin'} label="Admin" description="Settings & connections" leftSection={<Settings size={18} />} onClick={() => go('Admin')} color="grape" variant="light" /></Stack></AppShell.Navbar>
     <AppShell.Main><Box className="boutique-page">
       {error && <Alert color="red" mb="md" title="Unable to load operations">We couldn't connect to BoutiqueOS. Please try again.</Alert>}
       {area === 'Operations' && <Stack gap="md">
-        <Tabs value={operationsView} onChange={(value) => setOperationsView((value as OperationsView) || 'Dashboard')} color="grape" variant="pills"><Tabs.List><Tabs.Tab value="Dashboard" leftSection={<LayoutDashboard size={15} />}>Dashboard</Tabs.Tab><Tabs.Tab value="Workbench" leftSection={<PackageCheck size={15} />}>Products, customers & orders</Tabs.Tab><Tabs.Tab value="Measurements" leftSection={<Ruler size={15} />}>Measurements</Tabs.Tab></Tabs.List></Tabs>
-        {operationsView === 'Dashboard' && <Dashboard dashboard={dashboard} onMeasurements={() => setOperationsView('Measurements')} onWorkbench={() => setOperationsView('Workbench')} />}
+        <Tabs value={operationsView} onChange={(value) => setOperationsView((value as OperationsView) || 'Dashboard')} color="grape" variant="pills"><Tabs.List><Tabs.Tab value="Dashboard" leftSection={<LayoutDashboard size={15} />}>Dashboard</Tabs.Tab><Tabs.Tab value="Workbench" leftSection={<PackageCheck size={15} />}>Products & customers</Tabs.Tab><Tabs.Tab value="Orders" leftSection={<ShoppingBag size={15} />}>Orders</Tabs.Tab><Tabs.Tab value="Measurements" leftSection={<Ruler size={15} />}>Measurements</Tabs.Tab></Tabs.List></Tabs>
+        {operationsView === 'Dashboard' && <Dashboard dashboard={dashboard} onMeasurements={() => setOperationsView('Measurements')} onOrders={() => setOperationsView('Orders')} onWorkbench={() => setOperationsView('Workbench')} />}
         {operationsView === 'Workbench' && <Box className="embedded-workbench"><App /></Box>}
+        {operationsView === 'Orders' && <GuidedOrdersWorkspace customers={customers} orders={orders} onCreated={handleCreated} />}
         {operationsView === 'Measurements' && <VisualMeasurementsWorkspace customers={customers} />}
       </Stack>}
       {area === 'Reporting' && <Reporting dashboard={dashboard} orders={orders} />}
