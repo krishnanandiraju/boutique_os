@@ -1,0 +1,35 @@
+.boutique-workspace {
+  background: #f7f7f8;
+}
+
+.boutique-header {
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid #ececf0;
+}
+
+.boutique-navbar {
+  background: #ffffff;
+  border-right: 1px solid #ececf0;
+}
+
+.boutique-page {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 8px 4px 40px;
+}
+
+.embedded-workbench {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.measurement-form-card {
+  min-height: 460px;
+}
+
+@media (max-width: 62em) {
+  .boutique-page {
+    padding-top: 0;
+  }
+}
