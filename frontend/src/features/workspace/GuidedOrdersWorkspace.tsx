@@ -67,11 +67,18 @@ export function GuidedOrdersWorkspace({ customers, orders, onCreated }: {
   }, [])
 
   useEffect(() => {
-    if (!customerId) {
-      setProfiles([])
-      return
+    if (!customerId) return
+    let active = true
+    void api.customerMeasurementProfiles(customerId)
+      .then((result) => {
+        if (active) setProfiles(result)
+      })
+      .catch(() => {
+        if (active) setProfiles([])
+      })
+    return () => {
+      active = false
     }
-    void api.customerMeasurementProfiles(customerId).then(setProfiles).catch(() => setProfiles([]))
   }, [customerId])
 
   const selectedCustomer = customers.find((customer) => customer.id === customerId) ?? null
@@ -141,6 +148,7 @@ export function GuidedOrdersWorkspace({ customers, orders, onCreated }: {
       setSuccess(`Order #${created.id} created successfully.`)
       setCart([])
       setCustomerId(null)
+      setProfiles([])
       setStep(0)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to create order.')
@@ -187,7 +195,10 @@ export function GuidedOrdersWorkspace({ customers, orders, onCreated }: {
           clearable
           placeholder="Search or select customer"
           value={customerId?.toString() ?? null}
-          onChange={(value) => setCustomerId(value ? Number(value) : null)}
+          onChange={(value) => {
+            setProfiles([])
+            setCustomerId(value ? Number(value) : null)
+          }}
           data={customers.map((customer) => ({ value: String(customer.id), label: `${customer.name} · ${customer.phone}` }))}
         />
         {selectedCustomer && <Card withBorder padding="md" className="selected-customer-card">
