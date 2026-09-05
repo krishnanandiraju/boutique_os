@@ -30,6 +30,108 @@
   display: none;
 }
 
+.guided-orders {
+  max-width: 1040px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.wizard-progress,
+.wizard-card {
+  border-color: #e8e8ee;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 8px 28px rgba(32, 27, 38, 0.04);
+}
+
+.wizard-progress {
+  position: sticky;
+  top: 76px;
+  z-index: 5;
+}
+
+.wizard-step {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-radius: 12px;
+  color: var(--mantine-color-gray-6);
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.wizard-step.active {
+  color: var(--mantine-color-grape-8);
+  background: var(--mantine-color-grape-0);
+}
+
+.wizard-step.complete {
+  cursor: pointer;
+  color: var(--mantine-color-grape-7);
+}
+
+.selected-customer-card,
+.product-preview,
+.cart-line,
+.tailoring-line,
+.review-card .mantine-Card-root {
+  border-color: #ececf2;
+  border-radius: 14px;
+}
+
+.quantity-control {
+  display: grid;
+  grid-template-columns: 36px minmax(48px, 1fr) 36px;
+  max-width: 180px;
+}
+
+.quantity-value {
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-top: 1px solid var(--mantine-color-gray-4);
+  border-bottom: 1px solid var(--mantine-color-gray-4);
+  background: white;
+}
+
+.empty-cart {
+  min-height: 150px;
+  border: 1px dashed #d9d8df;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 6px;
+  text-align: center;
+  color: var(--mantine-color-gray-6);
+}
+
+.tailoring-options {
+  padding: 14px;
+  background: var(--mantine-color-grape-0);
+  border-radius: 12px;
+}
+
+.review-total {
+  padding: 18px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--mantine-color-grape-0), #ffffff);
+  border: 1px solid var(--mantine-color-grape-1);
+}
+
+.wizard-actions {
+  position: sticky;
+  bottom: 12px;
+  z-index: 4;
+  background: rgba(247, 247, 248, 0.92);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 10px 12px;
+}
+
 .measurement-form-card,
 .measurement-guide-card {
   min-height: 460px;
@@ -143,5 +245,59 @@
 
   .measurement-figure {
     min-height: 260px;
+  }
+
+  .wizard-progress {
+    top: 72px;
+  }
+}
+
+@media (max-width: 48em) {
+  .boutique-page {
+    padding-bottom: 90px;
+  }
+
+  .guided-page-heading {
+    align-items: flex-start;
+  }
+
+  .wizard-card {
+    padding: 16px !important;
+    border-radius: 16px;
+  }
+
+  .wizard-progress {
+    margin-inline: -4px;
+    border-radius: 14px;
+  }
+
+  .wizard-step {
+    padding: 6px 2px;
+  }
+
+  .item-entry-grid .mantine-Button-root {
+    width: 100%;
+  }
+
+  .quantity-control {
+    max-width: none;
+    width: 100%;
+  }
+
+  .cart-line .mantine-Group-root,
+  .tailoring-line > .mantine-Stack-root > .mantine-Group-root {
+    align-items: flex-start;
+  }
+
+  .wizard-actions {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    box-shadow: 0 10px 30px rgba(30, 24, 35, 0.12);
+  }
+
+  .wizard-actions .mantine-Button-root:last-child {
+    min-width: 140px;
   }
 }
