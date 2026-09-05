@@ -38,12 +38,18 @@ const guideFields: Record<GarmentPreset, GuideField[]> = {
 }
 
 const linePositions: Record<string, { x1: number; y1: number; x2: number; y2: number }> = {
-  bust: { x1: 30, y1: 38, x2: 70, y2: 38 }, waist: { x1: 34, y1: 50, x2: 66, y2: 50 },
-  hip: { x1: 31, y1: 62, x2: 69, y2: 62 }, shoulder: { x1: 34, y1: 24, x2: 66, y2: 24 },
-  blouse_length: { x1: 38, y1: 24, x2: 38, y2: 53 }, kurta_length: { x1: 38, y1: 24, x2: 38, y2: 78 },
-  sleeve_length: { x1: 67, y1: 26, x2: 79, y2: 45 }, armhole: { x1: 66, y1: 29, x2: 70, y2: 40 },
-  front_neck_depth: { x1: 50, y1: 24, x2: 50, y2: 34 }, back_neck_depth: { x1: 50, y1: 24, x2: 50, y2: 31 },
-  length: { x1: 39, y1: 47, x2: 39, y2: 91 }, thigh: { x1: 35, y1: 65, x2: 50, y2: 65 },
+  bust: { x1: 30, y1: 38, x2: 70, y2: 38 },
+  waist: { x1: 34, y1: 50, x2: 66, y2: 50 },
+  hip: { x1: 31, y1: 62, x2: 69, y2: 62 },
+  shoulder: { x1: 34, y1: 24, x2: 66, y2: 24 },
+  blouse_length: { x1: 38, y1: 24, x2: 38, y2: 53 },
+  kurta_length: { x1: 38, y1: 24, x2: 38, y2: 78 },
+  sleeve_length: { x1: 67, y1: 26, x2: 79, y2: 45 },
+  armhole: { x1: 66, y1: 29, x2: 70, y2: 40 },
+  front_neck_depth: { x1: 50, y1: 24, x2: 50, y2: 34 },
+  back_neck_depth: { x1: 50, y1: 24, x2: 50, y2: 31 },
+  length: { x1: 39, y1: 47, x2: 39, y2: 91 },
+  thigh: { x1: 35, y1: 65, x2: 50, y2: 65 },
   bottom_opening: { x1: 35, y1: 90, x2: 49, y2: 90 },
 }
 
@@ -54,18 +60,28 @@ function GarmentFigure({ garment, activeField, view }: { garment: GarmentPreset;
     : garment === 'KURTA'
       ? 'M38 20 Q50 14 62 20 L76 32 L68 43 L63 36 L66 88 L34 88 L37 36 L32 43 L24 32 Z'
       : 'M38 22 Q50 16 62 22 L76 32 L69 45 L63 37 L65 55 L35 55 L37 37 L31 45 L24 32 Z'
+
   return (
     <svg className="measurement-guide-svg" viewBox="0 0 100 100" role="img" aria-label={`${garment.toLowerCase()} ${view.toLowerCase()} measurement diagram`}>
       <path d={bodyPath} className="garment-silhouette" />
-      {garment !== 'BOTTOM' && <><circle cx="50" cy="11" r="7" className="garment-head" /><path d="M47 18 L47 22 M53 18 L53 22" className="garment-detail" /></>}
-      {fields.map((field, index) => {
-        const p = linePositions[field.key]; if (!p) return null
+      {garment !== 'BOTTOM' && (
+        <>
+          <circle cx="50" cy="11" r="7" className="garment-head" />
+          <path d="M47 18 L47 22 M53 18 L53 22" className="garment-detail" />
+        </>
+      )}
+      {fields.map((field) => {
+        const position = linePositions[field.key]
+        if (!position) return null
         const active = activeField === field.key
-        return <g key={field.key} className={active ? 'guide-line active' : 'guide-line'}>
-          <line x1={p.x1} y1={p.y1} x2={p.x2} y2={p.y2} />
-          <circle cx={p.x2} cy={p.y2} r="3.5" />
-          <text x={p.x2} y={p.y2 + 1.4} textAnchor="middle">{guideFields[garment].findIndex((f) => f.key === field.key) + 1}</text>
-        </g>
+        const number = guideFields[garment].findIndex((candidate) => candidate.key === field.key) + 1
+        return (
+          <g key={field.key} className={active ? 'guide-line active' : 'guide-line'}>
+            <line x1={position.x1} y1={position.y1} x2={position.x2} y2={position.y2} />
+            <circle cx={position.x2} cy={position.y2} r="3.5" />
+            <text x={position.x2} y={position.y2 + 1.4} textAnchor="middle">{number}</text>
+          </g>
+        )
       })}
     </svg>
   )
@@ -74,14 +90,57 @@ function GarmentFigure({ garment, activeField, view }: { garment: GarmentPreset;
 export function MeasurementGuide({ garment, activeField, onSelectField }: { garment: GarmentPreset; activeField: string | null; onSelectField: (key: string) => void }) {
   const [view, setView] = useState<View>('FRONT')
   const fields = useMemo(() => guideFields[garment], [garment])
-  if (garment === 'GENERAL') return <Paper withBorder p="lg"><Group><ThemeIcon color="grape" variant="light"><Ruler size={18} /></ThemeIcon><Text c="dimmed">Choose Blouse, Kurta or Bottom for a visual measurement guide.</Text></Group></Paper>
-  return <Paper withBorder p="lg" className="measurement-guide-card">
-    <Group justify="space-between" align="center" mb="md"><Box><Text fw={800}>Measurement guide</Text><Text size="sm" c="dimmed">Select a measurement to see where it is taken.</Text></Box><SegmentedControl size="xs" value={view} onChange={(value) => setView(value as View)} data={[{ label: 'Front', value: 'FRONT' }, { label: 'Back', value: 'BACK' }]} /></Group>
-    <Box className="measurement-figure"><GarmentFigure garment={garment} activeField={activeField} view={view} /></Box>
-    <Stack gap={4} mt="md">
-      {fields.map((field, index) => <UnstyledButton key={field.key} className={activeField === field.key ? 'guide-instruction active' : 'guide-instruction'} onClick={() => { onSelectField(field.key); setView(field.view) }}>
-        <Group gap="sm" wrap="nowrap"><span className="guide-number">{index + 1}</span><Box><Text size="sm" fw={700}>{field.label}</Text><Text size="xs" c="dimmed">{field.hint}{field.view === 'BACK' ? ' · Back view' : ''}</Text></Box></Group>
-      </UnstyledButton>)}
-    </Stack>
-  </Paper>
+
+  if (garment === 'GENERAL') {
+    return (
+      <Paper withBorder p="lg">
+        <Group>
+          <ThemeIcon color="grape" variant="light"><Ruler size={18} /></ThemeIcon>
+          <Text c="dimmed">Choose Blouse, Kurta or Bottom for a visual measurement guide.</Text>
+        </Group>
+      </Paper>
+    )
+  }
+
+  return (
+    <Paper withBorder p="lg" className="measurement-guide-card">
+      <Group justify="space-between" align="center" mb="md">
+        <Box>
+          <Text fw={800}>Measurement guide</Text>
+          <Text size="sm" c="dimmed">Select a measurement to see where it is taken.</Text>
+        </Box>
+        <SegmentedControl
+          size="xs"
+          value={view}
+          onChange={(value) => setView(value as View)}
+          data={[{ label: 'Front', value: 'FRONT' }, { label: 'Back', value: 'BACK' }]}
+        />
+      </Group>
+
+      <Box className="measurement-figure">
+        <GarmentFigure garment={garment} activeField={activeField} view={view} />
+      </Box>
+
+      <Stack gap={4} mt="md">
+        {fields.map((field, index) => (
+          <UnstyledButton
+            key={field.key}
+            className={activeField === field.key ? 'guide-instruction active' : 'guide-instruction'}
+            onClick={() => {
+              onSelectField(field.key)
+              setView(field.view)
+            }}
+          >
+            <Group gap="sm" wrap="nowrap">
+              <span className="guide-number">{index + 1}</span>
+              <Box>
+                <Text size="sm" fw={700}>{field.label}</Text>
+                <Text size="xs" c="dimmed">{field.hint}{field.view === 'BACK' ? ' · Back view' : ''}</Text>
+              </Box>
+            </Group>
+          </UnstyledButton>
+        ))}
+      </Stack>
+    </Paper>
+  )
 }
