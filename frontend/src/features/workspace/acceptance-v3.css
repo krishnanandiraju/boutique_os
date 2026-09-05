@@ -1,0 +1,50 @@
+.v3-page-heading { gap: 1rem; }
+.v3-filter-scroll { overflow-x: auto; flex-wrap: nowrap; padding-bottom: .25rem; }
+.v3-merch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; }
+.v3-merch-card { overflow: hidden; background: white; transition: transform .16s ease, box-shadow .16s ease; }
+.v3-merch-card:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(35, 18, 45, .08); }
+.v3-merch-image-wrap { position: relative; aspect-ratio: 4 / 5; background: linear-gradient(145deg, #faf7fc, #f1edf5); }
+.v3-merch-placeholder { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .5rem; color: #8d8494; }
+.v3-stock-badge { position: absolute; top: .75rem; right: .75rem; }
+.v3-stepper { display: grid !important; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .5rem; }
+.v3-stepper button { border: 1px solid #e4ddea; background: #fff; color: #665c6b; border-radius: 12px; padding: .7rem .8rem; display: flex; align-items: center; justify-content: center; gap: .45rem; cursor: pointer; font: inherit; }
+.v3-stepper button span { width: 24px; height: 24px; border-radius: 999px; display: inline-grid; place-items: center; background: #f1e7f6; font-size: .75rem; font-weight: 800; }
+.v3-stepper button.active { color: #7b1fa2; border-color: #d19ae6; background: #fbf5fd; }
+.v3-stepper button.done { color: #6a1b9a; background: #f7effa; }
+.v3-upload-tile { min-width: 0; }
+.v3-empty-upload { display: grid; place-items: center; text-align: center; gap: .3rem; min-height: 180px; background: #faf9fb; }
+.v3-smart-search { position: relative; }
+.v3-search-results { position: absolute; z-index: 40; left: 0; right: 0; top: calc(100% + 6px); border: 1px solid #e0dae5; background: white; border-radius: 12px; box-shadow: 0 12px 28px rgba(33, 16, 42, .13); overflow: hidden; max-height: 360px; overflow-y: auto; }
+.v3-search-results button { width: 100%; border: 0; border-bottom: 1px solid #f0edf2; background: white; padding: .8rem .9rem; display: flex; justify-content: space-between; gap: 1rem; text-align: left; cursor: pointer; color: inherit; font: inherit; }
+.v3-search-results button:hover { background: #fbf7fd; }
+.v3-empty-cart { display: grid; place-items: center; min-height: 180px; text-align: center; color: #7c7381; border: 1px dashed #d9d0de; border-radius: 14px; }
+.v3-wizard-progress > div > div { display: flex; align-items: center; gap: .4rem; flex: 1; padding: .35rem; border-radius: 10px; cursor: default; }
+.v3-wizard-progress > div > div.active { background: #fbf5fd; }
+.v3-wizard-progress > div > div.done { cursor: pointer; }
+.v3-review-total { padding: 1rem; border-radius: 14px; background: linear-gradient(110deg, #fbf3ff, #f7f1fa); }
+.v3-measurement-figure { min-height: 320px; display: grid; place-items: center; background: #faf9fb; border-radius: 16px; margin: 1rem 0; }
+.v3-measurement-figure svg { width: min(100%, 320px); height: 320px; }
+.v3-guide-body { fill: #f1e7f6; stroke: #9c55b8; stroke-width: 1.2; }
+.v3-guide-head { fill: #f7effa; stroke: #9c55b8; stroke-width: 1.2; }
+.v3-guide-line line { stroke: #7f7585; stroke-width: 1.3; stroke-dasharray: 2.4 2.4; }
+.v3-guide-line circle { fill: #fff; stroke: #7f7585; stroke-width: 1; }
+.v3-guide-line.active line { stroke: #a21caf; stroke-width: 2.3; stroke-dasharray: none; }
+.v3-guide-line.active circle { fill: #d946ef; stroke: #a21caf; }
+.v3-guide-instruction { width: 100%; border-radius: 10px; padding: .5rem .6rem; }
+.v3-guide-instruction:hover, .v3-guide-instruction.active { background: #fbf5fd; }
+.v3-guide-instruction span { width: 26px; height: 26px; display: inline-grid; place-items: center; border-radius: 999px; background: #f1e7f6; color: #7b1fa2; font-size: .75rem; font-weight: 800; }
+@media (max-width: 767px) {
+  .v3-page-heading { align-items: stretch !important; flex-direction: column; }
+  .v3-page-heading .mantine-Button-root { width: 100%; }
+  .v3-merch-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+  .v3-merch-card .mantine-Text-root { overflow-wrap: anywhere; }
+  .v3-stepper { grid-template-columns: repeat(4, max-content); overflow-x: auto; justify-content: start; }
+  .v3-stepper button { min-width: 110px; }
+  .v3-search-results { position: fixed; left: .75rem; right: .75rem; top: auto; bottom: 84px; max-height: 50vh; }
+  .v3-wizard-progress { overflow-x: auto; }
+  .v3-wizard-progress > div { min-width: 470px; }
+}
+@media (max-width: 520px) {
+  .v3-merch-grid { grid-template-columns: 1fr; }
+  .v3-merch-image-wrap { aspect-ratio: 4 / 3; }
+}
