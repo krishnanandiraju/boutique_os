@@ -12,6 +12,7 @@ from app.api.tailoring_lifecycle import router as tailoring_lifecycle_router
 from app.catalog_api import router as catalog_router
 from app.core.config import settings
 from app.db import Base, SessionLocal, engine
+from app.domain_v2 import router as domain_v2_router
 from app.seed import seed_data
 from app.services.inventory_service import DomainError
 from app.stitching.demo_seed import seed_demo_fit_memory
@@ -129,6 +130,7 @@ def create_app() -> FastAPI:
     app.include_router(system_router)
     app.include_router(tailoring_lifecycle_router)
     app.include_router(stitching_router)
+    app.include_router(domain_v2_router)
     return app
 
 
