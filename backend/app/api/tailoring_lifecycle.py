@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
+from app.domain_v2 import MaterialStatus, TailoringMaterial
 from app.integrations.service import IntegrationEventService
 from app.models import Order, OrderLine, OrderStatus, TailoringStage, TailoringTask
 
@@ -42,6 +43,18 @@ def _tailoring_lines(db: Session, order_id: int) -> list[OrderLine]:
     )
 
 
+def _unsourced_required_materials(db: Session, order_line_id: int) -> list[TailoringMaterial]:
+    return list(
+        db.scalars(
+            select(TailoringMaterial).where(
+                TailoringMaterial.order_line_id == order_line_id,
+                TailoringMaterial.required.is_(True),
+                TailoringMaterial.status == MaterialStatus.NEEDED,
+            )
+        )
+    )
+
+
 @router.post("/api/tailoring/tasks/{task_id}/transition", response_model=TailoringTransitionResponse)
 def transition_tailoring_task(
     task_id: int,
@@ -58,6 +71,18 @@ def transition_tailoring_task(
     order = db.scalar(select(Order).where(Order.id == line.order_id))
     if not order:
         raise HTTPException(404, "Order not found")
+
+    if payload.stage == TailoringStage.CUTTING:
+        blocked = _unsourced_required_materials(db, line.id)
+        if blocked:
+            raise HTTPException(
+                409,
+                {
+                    "code": "TAILORING_MATERIALS_PENDING",
+                    "message": "Source required tailoring materials before cutting",
+                    "details": {"materials": [material.name for material in blocked]},
+                },
+            )
 
     # READY is only reachable through QC. Rework can explicitly move the task back
     # to an earlier stage instead of silently treating QC as a decorative column.
@@ -88,7 +113,6 @@ def transition_tailoring_task(
             },
         )
     elif payload.stage != TailoringStage.READY and order.status == OrderStatus.READY:
-        # A ready garment sent back for alteration/QC makes the order not ready again.
         order.status = OrderStatus.TAILORING
 
     db.commit()
