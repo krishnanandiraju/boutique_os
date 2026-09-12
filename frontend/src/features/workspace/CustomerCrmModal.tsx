@@ -41,9 +41,9 @@ export function CustomerCrmModal({ customer, opened, onClose, onSaved }: { custo
   const [eventForm, setEventForm] = useState({ occasion_type: 'WEDDING_ANNIVERSARY' as CustomerOccasion['occasion_type'], label: 'Wedding anniversary', event_date: '', recurring_annually: true, offer_kind: 'PERCENTAGE' as CustomerOccasion['offer_kind'], offer_value: '10', offer_code: '', lead_days: 14, notes: '' })
 
   function load(customerId: number) {
-    setError(''); setNotice('')
     void Promise.all([customerCrmApi.profile(customerId), customerCrmApi.occasions(customerId)])
       .then(([nextProfile, nextOccasions]) => {
+        setError('')
         setProfile(nextProfile)
         setForm({
           address_line1: nextProfile.address_line1,
@@ -71,7 +71,7 @@ export function CustomerCrmModal({ customer, opened, onClose, onSaved }: { custo
 
   useEffect(() => {
     if (opened && customer) load(customer.id)
-  }, [opened, customer?.id])
+  }, [opened, customer])
 
   const nextOccasion = useMemo(() => occasions[0] ?? null, [occasions])
 
