@@ -50,6 +50,9 @@ export type Supplier = {
 }
 
 export const domainV2Api = {
+  orderPricing: (id:number) => request<OrderPricing>(`/api/v2/orders/${id}/pricing`),
+  applyDiscount: (id:number,payload:{rule_id:number;order_line_id?:number;reason:string}) => request<OrderPricing>(`/api/v2/orders/${id}/discounts`,{method:'POST',body:JSON.stringify(payload)}),
+  reverseDiscount: (id:number,adjustmentId:number,reason:string) => request<OrderPricing>(`/api/v2/orders/${id}/discounts/${adjustmentId}/reverse`,{method:'POST',body:JSON.stringify({reason})}),
   merchantPolicy: () => request<MerchantPolicy>('/api/v2/merchant-policy'),
   saveMerchantPolicy: (payload: Omit<MerchantPolicy, 'id' | 'merchant_id' | 'updated_at'>) => request<MerchantPolicy>('/api/v2/merchant-policy', { method: 'PUT', body: JSON.stringify(payload) }),
   discountRules: () => request<DiscountRule[]>('/api/v2/discount-rules'),
@@ -57,3 +60,5 @@ export const domainV2Api = {
   suppliers: () => request<Supplier[]>('/api/v2/suppliers'),
   createSupplier: (payload: { name: string; phone?: string; email?: string; notes?: string }) => request<Supplier>('/api/v2/suppliers', { method: 'POST', body: JSON.stringify(payload) }),
 }
+
+export type OrderPricing = {order_id:number;subtotal:string;discount_total:string;total:string;adjustments:{id:number;rule_id:number|null;order_line_id:number|null;kind:string;value:string;amount:string;reason:string|null;source:string;active:boolean;created_at:string}[]}
