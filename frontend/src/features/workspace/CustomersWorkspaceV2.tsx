@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Alert, Badge, Box, Button, Group, Modal, Stack, Table, Text, TextInput, Title } from '@mantine/core'
+import { Alert, Avatar, Badge, Box, Button, Group, Modal, Stack, Table, Text, TextInput, Title } from '@mantine/core'
 import { CalendarHeart, Search, UserPlus } from 'lucide-react'
 import { api } from '../../api'
 import { customerCrmApi, type CustomerProfileSummary } from '../../customerCrmApi'
 import type { Customer, Order } from '../../types'
 import { CustomerCrmModal } from './CustomerCrmModal'
 import './final-ux.css'
+import { demoCustomerPhoto } from './demoCustomers'
 
 function money(value: string | number) {
   const numeric = typeof value === 'string' ? Number(value) : value
@@ -75,7 +76,7 @@ export function CustomersWorkspaceV2({ customers, onCreated }: { customers: Cust
             const rows = customerOrders(customer.id)
             const crm = crmSummaries[customer.id]
             return <Table.Tr key={customer.id}>
-              <Table.Td><Stack gap={1}><Text className="customer-row-name">{customer.name}</Text><Text size="xs" c="dimmed">{customer.phone}{customer.email ? ` · ${customer.email}` : ''}</Text></Stack></Table.Td>
+              <Table.Td><Group wrap="nowrap"><Avatar src={demoCustomerPhoto(customer)} alt={demoCustomerPhoto(customer) ? `Fictional demo portrait for ${customer.name}` : customer.name} radius="xl"/><Stack gap={1}><Text className="customer-row-name">{customer.name}</Text><Text size="xs" c="dimmed">{customer.phone}{customer.email ? ` · ${customer.email}` : ''}</Text>{demoCustomerPhoto(customer) && <Text size="xs" c="dimmed">Fictional demo photo</Text>}</Stack></Group></Table.Td>
               <Table.Td><Stack gap={4}><Group gap={4}>{crm?.customer_segment && <Badge size="xs" color="grape" variant="light">{crm.customer_segment}</Badge>}{crm?.merchant_tags.slice(0, 2).map((tag) => <Badge key={tag} size="xs" variant="outline">{tag}</Badge>)}</Group><Text size="xs" c="dimmed">{[crm?.city, crm?.acquisition_source].filter(Boolean).join(' · ') || 'Profile not enriched yet'}</Text></Stack></Table.Td>
               <Table.Td><Badge variant="light" color={profileCounts[customer.id] ? 'grape' : 'gray'}>{profileCounts[customer.id] ?? 0}</Badge></Table.Td>
               <Table.Td>{crm?.order_count ?? rows.length}</Table.Td>
