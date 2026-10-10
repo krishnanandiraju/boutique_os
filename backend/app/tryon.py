@@ -15,6 +15,7 @@ from app.core.config import settings
 from app.db import get_db
 from app.models import Customer, Item
 from app.catalog_models import ItemVariant
+from app.fashn_tryon import generate_fashn_preview
 
 router = APIRouter(prefix="/api/try-on", tags=["Virtual try-on"])
 MAX_BYTES = 10 * 1024 * 1024
@@ -33,7 +34,10 @@ def status(response: Response):
     response.headers["Cache-Control"] = "no-store"
     reason = "Google Virtual Try-On has not been enabled by the boutique."
     ready = settings.tryon_enabled and bool(settings.google_cloud_project)
-    if ready:
+    if settings.tryon_enabled and settings.tryon_provider == "huggingface":
+        ready = True
+        reason = "Free preview service selected; availability depends on its queue and daily allowance."
+    elif ready and settings.tryon_provider == "google":
         try:
             credentials()
         except HTTPException:
@@ -47,7 +51,11 @@ def status(response: Response):
             credentials()
         except HTTPException:
             design_ready = False
-    return {"design_configured": design_ready, "configured": ready, "message": "Ready to generate a preview." if ready else reason}
+    if settings.tryon_provider not in {"google", "huggingface"}:
+        ready = False
+        reason = "A supported preview provider needs to be selected."
+    return {"provider": settings.tryon_provider, "design_configured": design_ready, "configured": ready,
+            "message": reason if settings.tryon_provider == "huggingface" else "Ready to generate a preview." if ready else reason}
 
 
 def read_image(file: UploadFile) -> bytes:
@@ -60,7 +68,7 @@ def read_image(file: UploadFile) -> bytes:
                 raise HTTPException(422, "Use a JPEG or PNG photograph.")
             if image.width * image.height > 20_000_000 or min(image.size) < 64:
                 raise HTTPException(422, "Use a clear image between 64 pixels and 20 megapixels.")
-            # Re-encode to remove EXIF/location metadata before sending to Google.
+            # Remove EXIF/location metadata before sending to the preview provider.
             image.load()
             image = ImageOps.exif_transpose(image).convert("RGB")
             output = io.BytesIO()
@@ -118,12 +126,13 @@ def generate_preview(person: bytes, garment: bytes) -> dict:
 @router.post("/generate")
 def generate(response: Response, person: UploadFile = File(...), garment: UploadFile = File(...),
              consent: bool = Form(...), customer_id: int = Form(...), item_id: int = Form(...),
-             variant_id: int | None = Form(None), db: Session = Depends(get_db)):
+             variant_id: int | None = Form(None), category: str = Form("tops"),
+             photo_type: str = Form("flat-lay"), db: Session = Depends(get_db)):
     response.headers["Cache-Control"] = "no-store"
     if not consent:
         raise HTTPException(422, "Customer permission is required to use their photograph.")
-    if not settings.tryon_enabled or not settings.google_cloud_project:
-        raise HTTPException(503, "Google Virtual Try-On is not connected yet. You can continue to customization.")
+    if not settings.tryon_enabled or settings.tryon_provider not in {"google", "huggingface"} or (settings.tryon_provider == "google" and not settings.google_cloud_project):
+        raise HTTPException(503, "Virtual Try-On is not connected yet. You can continue to customization.")
     customer, item = db.get(Customer, customer_id), db.get(Item, item_id)
     if not customer or not item or customer.merchant_id != item.merchant_id:
         raise HTTPException(404, "Customer or garment was not found.")
@@ -133,4 +142,7 @@ def generate(response: Response, person: UploadFile = File(...), garment: Upload
         variant = db.get(ItemVariant, variant_id)
         if not variant or variant.item_id != item.id:
             raise HTTPException(422, "This variant does not belong to the selected garment.")
-    return generate_preview(read_image(person), read_image(garment))
+    person_bytes, garment_bytes = read_image(person), read_image(garment)
+    if settings.tryon_provider == "huggingface":
+        return generate_fashn_preview(person_bytes, garment_bytes, category, photo_type)
+    return generate_preview(person_bytes, garment_bytes)

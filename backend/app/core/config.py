@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     fabric_design_model: str = "gemini-2.5-flash-image"
     fabric_design_location: str = "global"
     tryon_enabled: bool = False
+    tryon_provider: str = "google"
     google_cloud_project: str = ""
     google_cloud_location: str = "us-central1"
     tryon_model: str = "virtual-try-on-001"

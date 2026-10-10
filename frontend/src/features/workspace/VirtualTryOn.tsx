@@ -26,7 +26,9 @@ export function VirtualTryOn({ customerId, customerName, savedPhotoUrl, garments
   const [person, setPerson] = useState<File | null>(null)
   const [garmentPhoto, setGarmentPhoto] = useState<File | null>(null)
   const [consent, setConsent] = useState(false)
-  const [status, setStatus] = useState<{ configured: boolean; design_configured?: boolean; message: string } | null>(null)
+  const [category, setCategory] = useState<string | null>(null)
+  const [photoType, setPhotoType] = useState<string | null>('flat-lay')
+  const [status, setStatus] = useState<{ configured: boolean; design_configured?: boolean; provider?: string; message: string } | null>(null)
   const [error, setError] = useState('')
   const [result, setResult] = useState('')
   const [busy, setBusy] = useState(false)
@@ -36,6 +38,7 @@ export function VirtualTryOn({ customerId, customerName, savedPhotoUrl, garments
   const options = garments
   const garment = options.find((g) => g.key === selected) ?? options[0]
   const isDesign = Boolean(garment?.fabricOnly)
+  const garmentCategory = category || (/kurta|dress|gown|lehenga|saree/i.test(garment?.name || '') ? 'one-pieces' : 'tops')
   const available = isDesign ? status?.design_configured : status?.configured
   const catalogUrl = garment?.mediaUrl?.startsWith('/media/') ? `${base}${garment.mediaUrl}` : ''
   // Product-level media cannot reliably identify a selected variant.
@@ -46,7 +49,7 @@ export function VirtualTryOn({ customerId, customerName, savedPhotoUrl, garments
     const controller = new AbortController()
     void fetch(`${base}/api/try-on/status`, { signal: controller.signal }).then(async (res) => {
       if (!res.ok) throw new Error('Unable to check try-on availability.')
-      return res.json() as Promise<{ configured: boolean; design_configured?: boolean; message: string }>
+      return res.json() as Promise<{ configured: boolean; design_configured?: boolean; provider?: string; message: string }>
     }).then(setStatus).catch(() => { if (!controller.signal.aborted) setStatus({ configured: false, message: 'Unable to connect to virtual try-on. You can continue to customization.' }) })
     return () => { controller.abort(); abort.current?.abort() }
   }, [])
@@ -98,11 +101,12 @@ export function VirtualTryOn({ customerId, customerName, savedPhotoUrl, garments
       const form = new FormData()
       form.append('person', person); form.append('garment', clothing, 'garment.jpg')
       if (isDesign) form.append('brief', brief)
+      else { form.append('category', garmentCategory); form.append('photo_type', photoType || 'flat-lay') }
       form.append('consent', 'true'); form.append('customer_id', String(customerId)); form.append('item_id', String(garment.itemId))
       if (garment.variantId) form.append('variant_id', String(garment.variantId))
       const response = await fetch(`${base}/api/try-on/${isDesign ? 'design' : 'generate'}`,  { method: 'POST', body: form, signal: controller.signal })
       const payload = await response.json()
-      if (!response.ok) throw new Error(response.status >= 500 ? 'Your preview is unavailable right now. Please try again later or continue to customization.' : payload.error?.message || payload.detail || 'Unable to generate preview.')
+      if (!response.ok) throw new Error(payload.error?.message || payload.detail || 'Your preview is unavailable right now. Please try later or continue to customization.')
       if (!payload.image?.startsWith('data:image/')) throw new Error('No preview was returned.')
       setResult(payload.image)
     } catch (e) { setError(e instanceof Error && e.name !== 'AbortError' ? e.message : 'Generation was interrupted or took too long. Please try again.') }
@@ -113,8 +117,9 @@ export function VirtualTryOn({ customerId, customerName, savedPhotoUrl, garments
     <Group justify="space-between"><Group><ThemeIcon color="grape" variant="light" size={48} radius="xl"><Sparkles size={24} /></ThemeIcon><Box><Text size="xs" c="grape" fw={800} tt="uppercase">Your fitting room</Text><Title order={2}>See the look before you customize</Title><Text c="dimmed" size="sm">Preview a finished garment on {customerName}.</Text></Box></Group><Badge color="grape" variant="light">Optional step</Badge></Group>
     {status && !available && <Alert color="gray" title={isDesign ? "Design preview is currently unavailable" : "Virtual try-on is currently unavailable"}>You can continue to customization and complete your order.</Alert>}
     {!options.length ? <Alert color="grape">Select merchandise to create a preview.</Alert> : <>
-      <Select label="Selected merchandise" data={options.map((g) => ({ value: g.key, label: g.name }))} value={garment?.key ?? null} disabled={busy} onChange={(value) => { setSelected(value); setGarmentPhoto(null); setResult(''); setError('') }} />
+      <Select label="Selected merchandise" data={options.map((g) => ({ value: g.key, label: g.name }))} value={garment?.key ?? null} disabled={busy} onChange={(value) => { setSelected(value); setCategory(null); setGarmentPhoto(null); setResult(''); setError('') }} />
       <Alert color="grape" title={isDesign ? 'Fabric → proposed design' : 'Finished garment → visual try-on'}>{isDesign ? 'An approximate design concept based on this fabric. Colour, motifs, construction and fabric requirements must be confirmed by the tailor.' : 'See how this garment may look on the customer. The image does not establish tightness, ease or alteration amounts; verify with measurements and a fitting.'}</Alert>
+      {!isDesign && status?.provider === 'huggingface' && <SimpleGrid cols={{base: 1, sm: 2}}><Select label="Garment type" data={[{value: 'tops', label: 'Top or blouse'}, {value: 'bottoms', label: 'Trousers or skirt'}, {value: 'one-pieces', label: 'Dress or complete outfit'}]} value={garmentCategory} disabled={busy} onChange={(value) => {setCategory(value); setResult('')}} /><Select label="Garment photograph shows" data={[{value: 'flat-lay', label: 'Garment on its own'}, {value: 'model', label: 'Garment worn by a person'}]} value={photoType} disabled={busy} onChange={(value) => {setPhotoType(value); setResult('')}} /></SimpleGrid>}
       {isDesign && <Textarea label="Proposed design" description="Specify silhouette, neckline, sleeves and length." value={brief} maxLength={1000} disabled={busy} onChange={(e) => { setBrief(e.currentTarget.value); setResult('') }}/>} 
       <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
         <Paper withBorder p="md" radius="md"><Stack><Group><Camera size={18} /><Text fw={800}>1. Customer photograph</Text></Group><Box className="tryon-photo">{personUrl ? <Image src={personUrl} alt={`${customerName}'s original photograph`} fit="contain" h={300} /> : <Stack align="center" gap="xs"><Camera size={36} /><Text fw={700}>A clear, front-facing photo</Text><Text size="sm" c="dimmed" ta="center">Show the full body for dresses or the upper body for tops.</Text></Stack>}</Box><FileInput label="Upload customer photo" placeholder="Choose JPEG or PNG" accept="image/jpeg,image/png" value={person} onChange={(file) => choosePhoto(file, 'person')} clearable disabled={busy} />{savedPhoto && <Button variant="light" color="grape" disabled={busy} loading={loadingSavedPhoto} onClick={() => void loadSavedPhoto()}>Use saved customer photo</Button>}<Text size="xs" c="dimmed">Up to 10 MB. Photos are used for this preview and are not saved to the catalog.</Text></Stack></Paper>
@@ -130,16 +135,16 @@ export function VirtualTryOn({ customerId, customerName, savedPhotoUrl, garments
 }
 
 export function VirtualTryOnAdmin() {
-  const [status, setStatus] = useState<{ configured: boolean; design_configured?: boolean; message: string } | null>(null)
+  const [status, setStatus] = useState<{ configured: boolean; design_configured?: boolean; provider?: string; message: string } | null>(null)
   useEffect(() => {
     const controller = new AbortController()
     void fetch(`${base}/api/try-on/status`, { signal: controller.signal }).then(async (response) => {
       if (!response.ok) throw new Error('Status unavailable')
-      return response.json() as Promise<{ configured: boolean; design_configured?: boolean; message: string }>
+      return response.json() as Promise<{ configured: boolean; design_configured?: boolean; provider?: string; message: string }>
     }).then(setStatus).catch(() => {
       if (!controller.signal.aborted) setStatus({ configured: false, message: 'Unable to retrieve backend configuration status.' })
     })
     return () => controller.abort()
   }, [])
-  return <Paper withBorder p="lg"><Stack gap="sm"><Group justify="space-between"><Title order={3}>Virtual Try-On integration</Title><Badge color={status?.configured ? 'teal' : 'gray'}>{status?.configured ? 'Configured' : status ? 'Needs attention' : 'Checking'}</Badge></Group><Text size="sm">Provider: Google Cloud · Virtual Try-On / Gemini fabric concepts</Text><Text size="sm">Fabric concepts: {status?.design_configured ? 'Configured' : 'Needs setup'}</Text><Text size="sm" c="dimmed">{status?.message || 'Checking backend configuration…'}</Text><Text size="xs" c="dimmed">Project, authentication, billing and model access are configured on the backend. Credential discovery does not verify billing or model access.</Text></Stack></Paper>
+  return <Paper withBorder p="lg"><Stack gap="sm"><Group justify="space-between"><Title order={3}>Virtual Try-On integration</Title><Badge color={status?.configured ? 'teal' : 'gray'}>{status?.configured ? 'Configured' : status ? 'Needs attention' : 'Checking'}</Badge></Group><Text size="sm">Provider: {status?.provider === 'huggingface' ? 'FASHN VTON · Hugging Face (free shared GPU)' : 'Google Cloud · Virtual Try-On'} · Fabric concepts: Google Gemini</Text><Text size="sm">Fabric concepts: {status?.design_configured ? 'Configured' : 'Needs setup'}</Text><Text size="sm" c="dimmed">{status?.message || 'Checking backend configuration…'}</Text><Text size="xs" c="dimmed">{status?.provider === 'huggingface' ? 'Free shared GPU allowance; queues and daily limits apply. No paid fallback is enabled. Readiness does not guarantee provider availability.' : 'Project, authentication, billing and model access are configured on the backend. Credential discovery does not verify billing or model access.'}</Text></Stack></Paper>
 }
