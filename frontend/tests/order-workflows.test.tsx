@@ -64,6 +64,7 @@ test('a customer can order fractional fabric and retain the tailoring selection'
   await user.clear(quantity)
   await user.type(quantity, '2.5')
   await user.click(screen.getByRole('button', { name: 'Continue' }))
+  await user.click(screen.getByRole('button', { name: 'Continue to customization' }))
   await user.click(screen.getByRole('checkbox', { name: 'Requires tailoring' }))
   await user.click(screen.getByRole('button', { name: 'Continue' }))
   expect(screen.getByText('Qty 2.5 · Tailoring')).toBeTruthy()
