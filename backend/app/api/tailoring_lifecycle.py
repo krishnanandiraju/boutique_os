@@ -72,6 +72,9 @@ def transition_tailoring_task(
     if not order:
         raise HTTPException(404, "Order not found")
 
+    if order.status in {OrderStatus.PACKED, OrderStatus.SHIPPED, OrderStatus.DELIVERED, OrderStatus.CANCELLED}:
+        raise HTTPException(409, "Tailoring is locked for this order")
+
     if payload.stage == TailoringStage.CUTTING:
         blocked = _unsourced_required_materials(db, line.id)
         if blocked:

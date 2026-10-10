@@ -1029,6 +1029,24 @@ def patch_order_status(order_id: int, payload: OrderStatusPatch, db: Session = D
     order = db.scalar(select(Order).where(Order.id == order_id))
     if not order:
         raise HTTPException(404, "Order not found")
+    if payload.status == order.status:
+        return _order_view(db, order_get(db, order.id))
+    allowed = {
+        OrderStatus.DRAFT: {OrderStatus.CONFIRMED, OrderStatus.READY, OrderStatus.CANCELLED},
+        OrderStatus.CONFIRMED: {OrderStatus.TAILORING, OrderStatus.READY, OrderStatus.CANCELLED},
+        OrderStatus.TAILORING: {OrderStatus.READY, OrderStatus.CANCELLED},
+        OrderStatus.READY: {OrderStatus.TAILORING, OrderStatus.PACKED, OrderStatus.SHIPPED, OrderStatus.DELIVERED, OrderStatus.CANCELLED},
+        OrderStatus.PACKED: {OrderStatus.SHIPPED, OrderStatus.DELIVERED},
+        OrderStatus.SHIPPED: {OrderStatus.DELIVERED},
+    }
+    if payload.status not in allowed.get(order.status, set()):
+        raise HTTPException(409, f"Cannot move {order.status.value} to {payload.status.value}")
+    if payload.status in {OrderStatus.READY, OrderStatus.PACKED, OrderStatus.SHIPPED, OrderStatus.DELIVERED}:
+        pending = db.scalar(select(OrderLine.id).where(OrderLine.order_id == order.id, OrderLine.requires_tailoring.is_(True), (OrderLine.tailoring_stage != TailoringStage.READY) | OrderLine.tailoring_stage.is_(None)))
+        if pending is not None:
+            raise HTTPException(409, "Complete tailoring and quality checks before fulfilment")
+    previous = order.status
+    integration_events.enqueue(db, merchant_id=order.merchant_id, event_type="order.status.changed", aggregate_type="Order", aggregate_id=str(order.id), payload={"order_id": order.id, "from_status": previous.value, "to_status": payload.status.value})
     order.status = payload.status
     db.commit()
     db.refresh(order)

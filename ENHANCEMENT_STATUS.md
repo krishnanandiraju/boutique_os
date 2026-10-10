@@ -1,6 +1,6 @@
 # BoutiqueOS enhancement status
 
-Updated: 2026-09-11
+Updated: 2026-09-26
 
 | Area | Decision / capability | Status | Notes / next |
 |---|---|---|---|
@@ -18,7 +18,8 @@ Updated: 2026-09-11
 | Tailoring | Material inventory consumption | Next | Link checklist items to stocked/yardage inventory after procurement design |
 | Tailoring | Trial records / outcomes | Next | Build repeatable trials and alteration feedback linkage |
 | Discounts | Rule model | Built foundation | Percentage/flat, line/order scope, reason, approval threshold, stackable |
-| Discounts | Apply adjustments to order totals | Next | Needs pricing service integration and audit-safe recalculation |
+| Discounts | Apply adjustments to order totals | Built | Line/order rules, caps, reasons, stacking, audited reversals, reporting totals and outbox events; authenticated approvals remain blocked pending RBAC |
+| Orders | History and fulfilment | Built | Search orders, inspect lines/pricing, mark ready/packed/shipped/delivered; unfinished tailoring blocks fulfilment |
 | Discounts | Promo/campaign engine | Next | Build on same rule/adjustment primitives |
 | Dashboard | Config payload foundation | Built foundation | Keep role-ready configuration; RBAC will govern visibility later |
 | Responsive UX | Shared responsive patterns | In progress | Collection, work-queue, analytics patterns; avoid one universal component |

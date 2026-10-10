@@ -15,6 +15,7 @@ from app.customer_crm_v2 import router as customer_crm_v2_router
 from app.db import Base, SessionLocal, engine
 from app.domain_v2 import router as domain_v2_router
 from app.seed import seed_data
+from app.pricing_api import router as pricing_router
 from app.services.inventory_service import DomainError
 from app.stitching.demo_seed import seed_demo_fit_memory
 from app.stitching.routes import router as stitching_router
@@ -133,6 +134,7 @@ def create_app() -> FastAPI:
     app.include_router(tailoring_lifecycle_router)
     app.include_router(stitching_router)
     app.include_router(domain_v2_router)
+    app.include_router(pricing_router)
     app.include_router(customer_crm_v2_router)
     app.include_router(tryon_router)
     return app
