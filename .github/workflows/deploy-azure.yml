@@ -6,6 +6,11 @@ on:
     types: [completed]
     branches: [main]
   workflow_dispatch:
+    inputs:
+      frontend_only:
+        description: Deploy only the frontend (backend must already be current and healthy)
+        type: boolean
+        default: false
 
 concurrency:
   group: boutiqueos-production
@@ -31,7 +36,23 @@ jobs:
       - name: Checkout tested revision
         uses: actions/checkout@v4
         with:
+          fetch-depth: 2
           ref: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.workflow_run.head_sha }}
+
+      - name: Select deployment mode
+        id: release
+        run: |
+          MODE=full
+          if git log -1 --format=%B | rg -Fq '[frontend-only]'; then
+            if git diff --quiet HEAD^ HEAD -- backend && curl --fail --silent --max-time 20 "$API_URL/health" > /dev/null; then
+              MODE=frontend
+            fi
+          fi
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.frontend_only }}" = "true" ]; then
+            curl --fail --silent --max-time 20 "$API_URL/health" > /dev/null
+            MODE=frontend
+          fi
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
 
       - name: Azure login
         uses: azure/login@v2
@@ -39,6 +60,7 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Prepare backend package
+        if: steps.release.outputs.mode != 'frontend'
         run: |
           cd backend
           zip -r ../backend.zip . \
@@ -49,6 +71,7 @@ jobs:
                "tests/*"
 
       - name: Deploy FastAPI backend
+        if: steps.release.outputs.mode != 'frontend'
         run: |
           az webapp config appsettings set \
             --resource-group "$RESOURCE_GROUP" \
@@ -95,6 +118,7 @@ jobs:
             --output none
 
       - name: Keep backend CORS aligned with production frontend
+        if: steps.release.outputs.mode != 'frontend'
         run: |
           az webapp config appsettings set \
             --resource-group "$RESOURCE_GROUP" \

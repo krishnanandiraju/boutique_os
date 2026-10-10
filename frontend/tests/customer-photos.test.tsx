@@ -29,3 +29,10 @@ test('merchandise no longer has a photo-library or loading button', async () => 
   await waitFor(() => expect(acceptanceApi.products).toHaveBeenCalled())
   expect(screen.queryByRole('button',{name:/photo library|load demo/i})).toBeNull()
 })
+
+test('free kurta previews default to a top to preserve trousers', async () => {
+  vi.stubGlobal('fetch', vi.fn(async (url: string) => url.endsWith('/status') ? {ok: true,json: async () => ({configured: true, provider: 'huggingface', design_configured: false})} : {ok: true,blob: async () => new Blob(['photo'], {type: 'image/png'})}))
+  render(<MantineProvider><VirtualTryOn customerId={1} customerName={customer.name} savedPhotoUrl={customer.photo_url} garments={[{key:'1:base',itemId:1,name:'Cotton Kurta - Blue',mediaUrl:'/media/garment.png',fabricOnly:false}]} onBusy={vi.fn()} onNotes={vi.fn()}/></MantineProvider>)
+  const input = await screen.findByLabelText('Garment type', {selector: 'input'}) as HTMLInputElement
+  expect(input.value).toBe('Top, blouse or kurta')
+})
