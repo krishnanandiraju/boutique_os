@@ -21,6 +21,7 @@ from app.stitching.demo_seed import seed_demo_fit_memory
 from app.stitching.routes import router as stitching_router
 from app.stitching.service import seed_garment_definitions
 from app.system_api import router as system_router
+from app.tryon import router as tryon_router
 
 logger = logging.getLogger("boutiqueos")
 
@@ -135,6 +136,7 @@ def create_app() -> FastAPI:
     app.include_router(domain_v2_router)
     app.include_router(pricing_router)
     app.include_router(customer_crm_v2_router)
+    app.include_router(tryon_router)
     return app
 
 

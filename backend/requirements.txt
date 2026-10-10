@@ -7,3 +7,5 @@ python-dotenv
 pytest
 httpx
 python-multipart
+google-auth[requests]
+Pillow
