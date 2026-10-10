@@ -1,0 +1,149 @@
+{
+  "notice": "Prompt summaries; fictional demo assets. Measurements are unverified synthetic fixtures.",
+  "assets": [
+    {
+      "file": "kurta-front.png",
+      "source": "AI generated from original prompts; no third-party reference photography",
+      "created": "2026-10-10",
+      "prompt": "Original professional boutique product photograph. A blue cotton women's knee-length kurta, simple round neckline, three-quarter sleeves, straight silhouette, restrained original white geometric embroidery at neckline, no pants or accessories. Full front view, warm off-white studio background, headless dress form where appropriate; no logos, text, watermark or designer reference.",
+      "reference": null,
+      "sha256": "a5a5ef3b9d25f40e46fa3717195340477c5c0b1e40de84a7878a43862d7eae5c"
+    },
+    {
+      "file": "kurta-alternate.png",
+      "source": "AI generated from original prompts; no third-party reference photography",
+      "created": "2026-10-10",
+      "prompt": "Photograph of the exact fictional product from kurta-front.png, preserve cut, colour, motifs and construction. Three-quarter angled view, whole product visible. Same studio lighting and background, no text, logos or people.",
+      "reference": "kurta-front.png",
+      "sha256": "7c5be86ecb40a81066a2cf82a16655f558c13a6178da1408d5da40055879edf6"
+    },
+    {
+      "file": "kurta-detail.png",
+      "source": "AI generated from original prompts; no third-party reference photography",
+      "created": "2026-10-10",
+      "prompt": "Photograph of the exact fictional product from kurta-front.png, preserve cut, colour, motifs and construction. Close-up of weave, embroidery or neckline. Same studio lighting and background, no text, logos or people.",
+      "reference": "kurta-front.png",
+      "sha256": "7f9e7e0cc4577441180b880d095d22548a0052831cdb4cf686d2a87a09e12675"
+    },
+    {
+      "file": "blouse-front.png",
+      "source": "AI generated from original prompts; no third-party reference photography",
+      "created": "2026-10-10",
+      "prompt": "Original professional boutique product photograph. A jewel emerald green silk Indian saree blouse, short sleeves, round neckline, delicate original gold piping, no saree or accessories. Full front view, warm off-white studio background, headless dress form where appropriate; no logos, text, watermark or designer reference.",
+      "reference": null,
+      "sha256": "1ede0023798057e956d6ccbd1127e2df3400400ae1211544094d1d8ad492748e"
+    },
+    {
+      "file": "blouse-alternate.png",
+      "source": "AI generated from original prompts; no third-party reference photography",
+      "created": "2026-10-10",
+      "prompt": "Photograph of the exact fictional product from blouse-front.png, preserve cut, colour, motifs and construction. Three-quarter angled view, whole product visible. Same studio lighting and background, no text, logos or people.",
+      "reference": "blouse-front.png",
+      "sha256": "202d37d0d237e2a8a2203dce541dce13a1e5cc292a348c7d566e793186a070a0"
+    },
+    {
+      "file": "blouse-detail.png",
+      "source": "AI generated from original prompts; no third-party reference photography",
+      "created": "2026-10-10",
+      "prompt": "Photograph of the exact fictional product from blouse-front.png, preserve cut, colour, motifs and construction. Close-up of weave, embroidery or neckline. Same studio lighting and background, no text, logos or people.",
+      "reference": "blouse-front.png",
+      "sha256": "ee711cdc99593d4c7e5d73ad1680a143bd91dcf44ca29bd41ce6035560d7b260"
+    },
+    {
+      "file": "lehenga-front.png",
+      "source": "AI generated from original prompts; no third-party reference photography",
+      "created": "2026-10-10",
+      "prompt": "Original professional boutique product photograph. A deep wine burgundy silk bridal lehenga outfit, matching modest short-sleeve blouse and full skirt with original small gold botanical embroidery, sheer matching dupatta neatly at side. Full front view, warm off-white studio background, headless dress form where appropriate; no logos, text, watermark or designer reference.",
+      "reference": null,
+      "sha256": "c1df3625963c9a9d672ddcd590c406778ffc1e661e7e28d7715f370aaa0b47f7"
+    },
+    {
+      "file": "lehenga-alternate.png",
+      "source": "AI generated from original prompts; no third-party reference photography",
+      "created": "2026-10-10",
+      "prompt": "Photograph of the exact fictional product from lehenga-front.png, preserve cut, colour, motifs and construction. Three-quarter angled view, whole product visible. Same studio lighting and background, no text, logos or people.",
+      "reference": "lehenga-front.png",
+      "sha256": "29e78c4ca0800a079504269b758cbb190d061f93d4d24f6f472043008410704b"
+    },
+    {
+      "file": "lehenga-detail.png",
+      "source": "AI generated from original prompts; no third-party reference photography",
+      "created": "2026-10-10",
+      "prompt": "Photograph of the exact fictional product from lehenga-front.png, preserve cut, colour, motifs and construction. Close-up of weave, embroidery or neckline. Same studio lighting and background, no text, logos or people.",
+      "reference": "lehenga-front.png",
+      "sha256": "bb36bba5b1f0c531c072df8f45d880e34e684e635615898c8c53909203878d3a"
+    },
+    {
+      "file": "saree-front.png",
+      "source": "AI generated from original prompts; no third-party reference photography",
+      "created": "2026-10-10",
+      "prompt": "Original professional boutique product photograph. A rich magenta silk Indian saree with a simple broad gold woven border and original small diamond motifs, displayed draped on a plain headless dress form; matching modest blouse, entire drape visible. Full front view, warm off-white studio background, headless dress form where appropriate; no logos, text, watermark or designer reference.",
+      "reference": null,
+      "sha256": "f25d66650d3bd22b36d94ac39af44c5a6584aafb101c21278364ee41b47994b1"
+    },
+    {
+      "file": "saree-alternate.png",
+      "source": "AI generated from original prompts; no third-party reference photography",
+      "created": "2026-10-10",
+      "prompt": "Photograph of the exact fictional product from saree-front.png, preserve cut, colour, motifs and construction. Three-quarter angled view, whole product visible. Same studio lighting and background, no text, logos or people.",
+      "reference": "saree-front.png",
+      "sha256": "904edad7600f70b5a815f19349b8341f513c49fca1a1dc8a2a9b6b5bd22ec386"
+    },
+    {
+      "file": "saree-detail.png",
+      "source": "AI generated from original prompts; no third-party reference photography",
+      "created": "2026-10-10",
+      "prompt": "Photograph of the exact fictional product from saree-front.png, preserve cut, colour, motifs and construction. Close-up of weave, embroidery or neckline. Same studio lighting and background, no text, logos or people.",
+      "reference": "saree-front.png",
+      "sha256": "822d2ae9d592d6d5ee84e14f00fc1d2b12f37b72dd5f731483b3a652ed26674c"
+    },
+    {
+      "file": "fabric-front.png",
+      "source": "AI generated from original prompts; no third-party reference photography",
+      "created": "2026-10-10",
+      "prompt": "Original professional boutique product photograph. An ochre gold Chanderi fabric roll partly unrolled to show translucent weave and original delicate small leaf motifs, fabric only. Full front view, warm off-white studio background, headless dress form where appropriate; no logos, text, watermark or designer reference.",
+      "reference": null,
+      "sha256": "ba8064cd0e801acba72df5a8e37b7633b96f8036244a58efb9833e31e820812f"
+    },
+    {
+      "file": "fabric-alternate.png",
+      "source": "AI generated from original prompts; no third-party reference photography",
+      "created": "2026-10-10",
+      "prompt": "Photograph of the exact fictional product from fabric-front.png, preserve cut, colour, motifs and construction. Three-quarter angled view, whole product visible. Same studio lighting and background, no text, logos or people.",
+      "reference": "fabric-front.png",
+      "sha256": "82c57decd93de9c43f3696d762769e78740820f7babde2f620cbda4421e3b1ac"
+    },
+    {
+      "file": "fabric-detail.png",
+      "source": "AI generated from original prompts; no third-party reference photography",
+      "created": "2026-10-10",
+      "prompt": "Photograph of the exact fictional product from fabric-front.png, preserve cut, colour, motifs and construction. Close-up of weave, embroidery or neckline. Same studio lighting and background, no text, logos or people.",
+      "reference": "fabric-front.png",
+      "sha256": "4fbf6fae790702c42c80e667309f677bb3ac2c5f640b0b443f0af383099e215f"
+    },
+    {
+      "file": "person-01.png",
+      "source": "AI generated from original prompts; no third-party reference photography",
+      "created": "2026-10-10",
+      "prompt": "Original realistic full-body studio photograph of a fictional adult Indian woman, front-facing, plain grey crew-neck t-shirt and navy trousers, arms slightly away from torso, off-white background, no real-person likeness, logos or watermarks.",
+      "reference": null,
+      "sha256": "d2b922a1a864d4d4d0ee6175c264cb050a68997db9e73fe816097317321fa68f"
+    },
+    {
+      "file": "person-02.png",
+      "source": "AI generated from original prompts; no third-party reference photography",
+      "created": "2026-10-10",
+      "prompt": "Original realistic full-body studio photograph of a fictional adult Indian woman, front-facing, plain grey crew-neck t-shirt and navy trousers, arms slightly away from torso, off-white background, no real-person likeness, logos or watermarks.",
+      "reference": null,
+      "sha256": "a1fc9f7c539aeaf3455ec0f12b8c4c0016c20c47f6332c48dc3de5beeba9b886"
+    },
+    {
+      "file": "person-03.png",
+      "source": "AI generated from original prompts; no third-party reference photography",
+      "created": "2026-10-10",
+      "prompt": "Original realistic full-body studio photograph of a fictional adult Indian woman, front-facing, plain grey crew-neck t-shirt and navy trousers, arms slightly away from torso, off-white background, no real-person likeness, logos or watermarks.",
+      "reference": null,
+      "sha256": "9b95d864a3573c031813a6d174a587dd4ea6c74f24b2b9a9ebc98f2e624089cd"
+    }
+  ]
+}

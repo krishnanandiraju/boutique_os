@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     media_max_video_mb: int = 100
     integration_processing_batch_size: int = 20
     integration_retry_limit: int = 3
+    fabric_design_enabled: bool = False
+    fabric_design_model: str = "gemini-2.5-flash-image"
+    fabric_design_location: str = "global"
     tryon_enabled: bool = False
     google_cloud_project: str = ""
     google_cloud_location: str = "us-central1"

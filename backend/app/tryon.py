@@ -41,7 +41,13 @@ def status(response: Response):
             reason = "Google Cloud authentication needs to be connected."
     elif settings.tryon_enabled:
         reason = "A Google Cloud project needs to be connected."
-    return {"configured": ready, "message": "Ready to generate a preview." if ready else reason}
+    design_ready = settings.fabric_design_enabled and bool(settings.google_cloud_project)
+    if design_ready:
+        try:
+            credentials()
+        except HTTPException:
+            design_ready = False
+    return {"design_configured": design_ready, "configured": ready, "message": "Ready to generate a preview." if ready else reason}
 
 
 def read_image(file: UploadFile) -> bytes:

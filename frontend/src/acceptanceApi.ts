@@ -88,6 +88,7 @@ export type VariantAwareLineCreate = {
   variant_id?: number
   quantity: string
   requires_tailoring: boolean
+  customization_notes?: string
   measurement_profile_id?: number
   measurement_version_id?: number
 }

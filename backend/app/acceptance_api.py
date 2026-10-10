@@ -122,6 +122,7 @@ class VariantAwareOrderLineCreate(ApiSchema):
     variant_id: int | None = None
     quantity: Decimal = Field(gt=Decimal("0"))
     requires_tailoring: bool = False
+    customization_notes: str | None = Field(default=None, max_length=2000)
     measurement_profile_id: int | None = None
     measurement_version_id: int | None = None
 
@@ -144,6 +145,7 @@ class VariantAwareOrderLineRead(ApiSchema):
     unit_price: Decimal
     requires_tailoring: bool
     tailoring_stage: TailoringStage | None
+    customization_notes: str | None = None
 
 
 class VariantAwareOrderRead(ApiSchema):
@@ -433,6 +435,7 @@ def _order_read(db: Session, order_id: int) -> VariantAwareOrderRead:
                 unit_price=line.unit_price,
                 requires_tailoring=line.requires_tailoring,
                 tailoring_stage=line.tailoring_stage,
+                customization_notes=line.tailoring_task.notes if line.tailoring_task else None,
             )
         )
     return VariantAwareOrderRead(
@@ -519,6 +522,8 @@ def create_variant_aware_order(payload: VariantAwareOrderCreate, db: Session = D
                 candidate.status = InventoryStatus.DEPLETED if candidate.quantity <= 0 else InventoryStatus.AVAILABLE
                 allocations.append((candidate, qty))
 
+            if request_line.customization_notes and not request_line.requires_tailoring:
+                raise DomainError(422, "Customization notes require tailoring to be enabled", code="INVALID_INPUT")
             profile_id, version_id = _measurement_version(db, payload.customer_id, request_line)
             first_lot = allocations[0][0] if allocations else None
             order_line = OrderLine(
@@ -554,7 +559,7 @@ def create_variant_aware_order(payload: VariantAwareOrderCreate, db: Session = D
                 )
 
             if request_line.requires_tailoring:
-                db.add(TailoringTask(order_line_id=order_line.id, stage=TailoringStage.MEASUREMENT_PENDING))
+                db.add(TailoringTask(order_line_id=order_line.id, stage=TailoringStage.MEASUREMENT_PENDING, notes=request_line.customization_notes))
 
             total += qty * unit_price
             touched_items.add(item.id)

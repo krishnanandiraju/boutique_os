@@ -22,6 +22,7 @@ from app.stitching.routes import router as stitching_router
 from app.stitching.service import seed_garment_definitions
 from app.system_api import router as system_router
 from app.tryon import router as tryon_router
+from app import fabric_design  # register fabric concept route
 
 logger = logging.getLogger("boutiqueos")
 
