@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Alert, Badge, Button, Checkbox, Divider, Group, Modal, NumberInput, Paper, Select, SimpleGrid, Stack, Text, TextInput, Textarea, Title } from '@mantine/core'
+import { Alert, Avatar, Badge, Button, Checkbox, Divider, Group, Modal, NumberInput, Paper, Select, SimpleGrid, Stack, Text, TextInput, Textarea, Title } from '@mantine/core'
 import { CalendarHeart, Save, Sparkles } from 'lucide-react'
+import { customerPhotoUrl } from './demoCustomers'
 import type { Customer } from '../../types'
 import { customerCrmApi, type CustomerOccasion, type CustomerProfile } from '../../customerCrmApi'
 
@@ -106,6 +107,7 @@ export function CustomerCrmModal({ customer, opened, onClose, onSaved }: { custo
 
   return <Modal opened={opened} onClose={onClose} title={customer ? `${customer.name} · CRM profile` : 'Customer profile'} size="xl" centered>
     <Stack gap="lg">
+      {customer && <Group><Avatar src={customerPhotoUrl(customer)} alt={customer.name} size={96} radius="md"/><Stack gap={4}><Text fw={800} size="lg">{customer.name}</Text><Text size="sm" c="dimmed">{customer.phone}</Text></Stack></Group>}
       {error && <Alert color="red">{error}</Alert>}
       {notice && <Alert color="teal">{notice}</Alert>}
       {profile && <SimpleGrid cols={{ base: 2, sm: 4 }}>

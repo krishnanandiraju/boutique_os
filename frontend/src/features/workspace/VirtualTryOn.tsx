@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Alert, Badge, Box, Button, Checkbox, FileInput, Group, Image, Paper, Select, SimpleGrid, Stack, Text, Textarea, ThemeIcon, Title } from '@mantine/core'
 import { Camera, ImagePlus, Sparkles } from 'lucide-react'
 import './virtual-try-on.css'
-import { demoCustomerPhoto } from './demoCustomers'
+import { customerPhotoUrl } from './demoCustomers'
 
 export type TryOnGarment = { key: string; itemId: number; variantId?: number; name: string; mediaUrl: string | null; fabricOnly: boolean; notes?: string }
 const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
@@ -18,9 +18,9 @@ function usePhoto(file: File | null) {
   return file ? url : ''
 }
 
-export function VirtualTryOn({ customerId, customerName, customerPhone, garments, onBusy, onNotes }: { customerId: number; customerName: string; customerPhone: string; garments: TryOnGarment[]; onBusy: (busy: boolean) => void; onNotes: (key: string, notes: string) => void }) {
-  const demoPhoto = demoCustomerPhoto({name: customerName, phone: customerPhone})
-  const [loadingDemo, setLoadingDemo] = useState(false)
+export function VirtualTryOn({ customerId, customerName, savedPhotoUrl, garments, onBusy, onNotes }: { customerId: number; customerName: string; savedPhotoUrl?: string | null; garments: TryOnGarment[]; onBusy: (busy: boolean) => void; onNotes: (key: string, notes: string) => void }) {
+  const savedPhoto = customerPhotoUrl({photo_url: savedPhotoUrl})
+  const [loadingSavedPhoto, setLoadingSavedPhoto] = useState(false)
   const [brief, setBrief] = useState('Knee-length straight kurta, round neckline, three-quarter sleeves, restrained trim.')
   const [selected, setSelected] = useState<string | null>(null)
   const [person, setPerson] = useState<File | null>(null)
@@ -51,15 +51,26 @@ export function VirtualTryOn({ customerId, customerName, customerPhone, garments
     return () => { controller.abort(); abort.current?.abort() }
   }, [])
 
-  async function loadDemoPhoto() {
-    if (!demoPhoto) return
-    setLoadingDemo(true); setError('')
+  useEffect(() => {
+    if (!savedPhoto) return
+    const controller = new AbortController()
+    void fetch(savedPhoto, {signal: controller.signal}).then(async (response) => {
+      if (!response.ok) throw new Error('Photo unavailable')
+      const blob = await response.blob()
+      if (!controller.signal.aborted) setPerson(new File([blob], 'customer-photo.png', {type: blob.type || 'image/png'}))
+    }).catch(() => { /* An upload remains available if the stored photo cannot load. */ })
+    return () => controller.abort()
+  }, [savedPhoto])
+
+  async function loadSavedPhoto() {
+    if (!savedPhoto) return
+    setLoadingSavedPhoto(true); setError('')
     try {
-      const response = await fetch(demoPhoto)
-      if (!response.ok) throw new Error('Unable to load the demo portrait.')
-      choosePhoto(new File([await response.blob()], 'fictional-demo-customer.png', { type: 'image/png' }), 'person')
-    } catch { setError('Unable to load the demo portrait. You can upload a photograph instead.') }
-    finally { setLoadingDemo(false) }
+      const response = await fetch(savedPhoto)
+      if (!response.ok) throw new Error('Unable to load the customer photograph.')
+      choosePhoto(new File([await response.blob()], 'customer-photo.png', { type: 'image/png' }), 'person')
+    } catch { setError('Unable to load the customer photograph. You can upload a photograph instead.') }
+    finally { setLoadingSavedPhoto(false) }
   }
 
   function choosePhoto(file: File | null, kind: 'person' | 'garment') {
@@ -106,7 +117,7 @@ export function VirtualTryOn({ customerId, customerName, customerPhone, garments
       <Alert color="grape" title={isDesign ? 'Fabric → proposed design' : 'Finished garment → visual try-on'}>{isDesign ? 'An approximate design concept based on this fabric. Colour, motifs, construction and fabric requirements must be confirmed by the tailor.' : 'See how this garment may look on the customer. The image does not establish tightness, ease or alteration amounts; verify with measurements and a fitting.'}</Alert>
       {isDesign && <Textarea label="Proposed design" description="Specify silhouette, neckline, sleeves and length." value={brief} maxLength={1000} disabled={busy} onChange={(e) => { setBrief(e.currentTarget.value); setResult('') }}/>} 
       <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
-        <Paper withBorder p="md" radius="md"><Stack><Group><Camera size={18} /><Text fw={800}>1. Customer photograph</Text></Group><Box className="tryon-photo">{personUrl ? <Image src={personUrl} alt={`${customerName}'s original photograph`} fit="contain" h={300} /> : <Stack align="center" gap="xs"><Camera size={36} /><Text fw={700}>A clear, front-facing photo</Text><Text size="sm" c="dimmed" ta="center">Show the full body for dresses or the upper body for tops.</Text></Stack>}</Box><FileInput label="Upload customer photo" placeholder="Choose JPEG or PNG" accept="image/jpeg,image/png" value={person} onChange={(file) => choosePhoto(file, 'person')} clearable disabled={busy} />{demoPhoto && <Button variant="light" color="grape" disabled={busy} loading={loadingDemo} onClick={() => void loadDemoPhoto()}>Use fictional demo customer photo</Button>}<Text size="xs" c="dimmed">Up to 10 MB. Photos are used for this preview and are not saved to the catalog.</Text></Stack></Paper>
+        <Paper withBorder p="md" radius="md"><Stack><Group><Camera size={18} /><Text fw={800}>1. Customer photograph</Text></Group><Box className="tryon-photo">{personUrl ? <Image src={personUrl} alt={`${customerName}'s original photograph`} fit="contain" h={300} /> : <Stack align="center" gap="xs"><Camera size={36} /><Text fw={700}>A clear, front-facing photo</Text><Text size="sm" c="dimmed" ta="center">Show the full body for dresses or the upper body for tops.</Text></Stack>}</Box><FileInput label="Upload customer photo" placeholder="Choose JPEG or PNG" accept="image/jpeg,image/png" value={person} onChange={(file) => choosePhoto(file, 'person')} clearable disabled={busy} />{savedPhoto && <Button variant="light" color="grape" disabled={busy} loading={loadingSavedPhoto} onClick={() => void loadSavedPhoto()}>Use saved customer photo</Button>}<Text size="xs" c="dimmed">Up to 10 MB. Photos are used for this preview and are not saved to the catalog.</Text></Stack></Paper>
         <Paper withBorder p="md" radius="md"><Stack><Group><ImagePlus size={18} /><Text fw={800}>2. {isDesign ? 'Fabric photograph' : 'Garment photograph'}</Text></Group><Box className="tryon-photo">{garmentUrl ? <Image src={garmentUrl} alt={garment?.name} fit="contain" h={300} /> : <Stack align="center" gap="xs"><ImagePlus size={36} /><Text fw={700}>Show the finished garment</Text><Text size="sm" c="dimmed" ta="center">Use the exact colour and variant selected for this order.</Text></Stack>}</Box><FileInput label={useCatalog ? 'Replace catalog photo (optional)' : 'Upload selected merchandise photo'} placeholder="Choose JPEG or PNG" accept="image/jpeg,image/png" value={garmentPhoto} onChange={(file) => choosePhoto(file, 'garment')} clearable disabled={busy} /><Text size="xs" c="dimmed">{isDesign ? 'Use a clear fabric photo that shows its weave, colour and pattern.' : 'Use a clear photograph of the finished garment.'}</Text></Stack></Paper>
       </SimpleGrid>
       <Checkbox label="The customer permits these photos to be processed for their virtual try-on preview." checked={consent} onChange={(e) => { setConsent(e.currentTarget.checked); setResult('') }} disabled={busy} />

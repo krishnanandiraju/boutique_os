@@ -87,6 +87,22 @@ class Customer(Base):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     measurement_profiles: Mapped[list[MeasurementProfile]] = relationship(back_populates="customer")
+    photo: Mapped[CustomerPhoto | None] = relationship(back_populates="customer", uselist=False, cascade="all, delete-orphan")
+
+    @property
+    def photo_url(self) -> str | None:
+        return f"/media/{self.photo.storage_key}" if self.photo else None
+
+
+class CustomerPhoto(Base):
+    __tablename__ = "customer_photos"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    customer_id: Mapped[int] = mapped_column(ForeignKey("customers.id"), unique=True, nullable=False)
+    storage_key: Mapped[str] = mapped_column(String(500), nullable=False)
+    mime_type: Mapped[str] = mapped_column(String(120), nullable=False)
+    created_by: Mapped[str] = mapped_column(String(120), nullable=False)
+    customer: Mapped[Customer] = relationship(back_populates="photo")
 
 
 class MediaType(str, enum.Enum):

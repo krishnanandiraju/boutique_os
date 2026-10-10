@@ -5,7 +5,6 @@ import { acceptanceApi, absoluteMediaUrl, type AudienceSegment, type ProductView
 import type { InventoryType } from '../../types'
 import './acceptance-v3.css'
 import { ProductGallery } from './ProductGallery'
-import { DemoPhotography } from './DemoPhotography'
 
 type DraftVariant = VariantSeed & { key: string; size: string; colour: string }
 type Draft = { name: string; sku: string; inventory_type: InventoryType; category: string; fabric: string; color: string; selling_price: string; cost_price: string; quantity: string; audience: AudienceSegment; collection: string; season: string; description: string }
@@ -64,7 +63,7 @@ export function CatalogWorkspaceV4() {
   }
 
   return <Stack gap="lg">
-    <Group justify="space-between" align="flex-end" className="v3-page-heading"><Box><Text size="sm" c="dimmed">Operations</Text><Title order={1}>Products</Title><Text c="dimmed">Merchandise visually; variants, stock and optional SKUs stay underneath.</Text></Box><Group><DemoPhotography onChanged={load}/><Button color="grape" leftSection={<PackagePlus size={17}/>} onClick={() => setOpened(true)}>Add product</Button></Group></Group>
+    <Group justify="space-between" align="flex-end" className="v3-page-heading"><Box><Text size="sm" c="dimmed">Operations</Text><Title order={1}>Products</Title><Text c="dimmed">Merchandise visually; variants, stock and optional SKUs stay underneath.</Text></Box><Group><Button color="grape" leftSection={<PackagePlus size={17}/>} onClick={() => setOpened(true)}>Add product</Button></Group></Group>
     {error && <Alert color="red">{error}</Alert>}
     <TextInput size="md" placeholder="Search product, SKU, fabric, colour, collection or variant..." value={query} onChange={(e) => setQuery(e.currentTarget.value)}/>
     <Group gap="xs" className="v3-filter-scroll">{categories.map((c) => <Button key={c} size="xs" radius="xl" color="grape" variant={category === c ? 'filled' : 'light'} onClick={() => setCategory(c)}>{c === 'ALL' ? 'All' : c}</Button>)}</Group>

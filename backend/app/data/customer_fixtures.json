@@ -1,0 +1,18 @@
+{
+  "origin": "Invented customer specifications for workflow testing. Portrait proportions are illustrative; no body dimensions were measured or inferred from the images.",
+  "version": 2,
+  "customers": [
+    {"name": "Anjali Rao", "phone": "+91-9000000001", "profiles": [
+      {"name": "Blouse", "garment_type": "BLOUSE", "measurements": {"bust": 36, "waist": 30, "shoulder": 14, "blouse_length": 15, "sleeve_length": 10, "armhole": 16, "front_neck_depth": 7, "back_neck_depth": 9}},
+      {"name": "Kurta", "garment_type": "KURTA", "measurements": {"bust": 36, "waist": 30, "hip": 39, "shoulder": 14, "kurta_length": 40, "sleeve_length": 17, "armhole": 16, "neck_depth": 5}}
+    ]},
+    {"name": "Priya Sharma", "phone": "+91-9000000002", "profiles": [
+      {"name": "Blouse", "garment_type": "BLOUSE", "measurements": {"bust": 42, "waist": 36, "shoulder": 15, "blouse_length": 16, "sleeve_length": 10, "armhole": 19, "front_neck_depth": 7, "back_neck_depth": 9}},
+      {"name": "Kurta", "garment_type": "KURTA", "measurements": {"bust": 42, "waist": 36, "hip": 45, "shoulder": 15, "kurta_length": 39, "sleeve_length": 17, "armhole": 19, "neck_depth": 5}}
+    ]},
+    {"name": "Neha Reddy", "phone": "+91-9000000003", "profiles": [
+      {"name": "Blouse", "garment_type": "BLOUSE", "measurements": {"bust": 32, "waist": 26, "shoulder": 13, "blouse_length": 14, "sleeve_length": 9, "armhole": 15, "front_neck_depth": 6, "back_neck_depth": 8}},
+      {"name": "Kurta", "garment_type": "KURTA", "measurements": {"bust": 32, "waist": 26, "hip": 35, "shoulder": 13, "kurta_length": 38, "sleeve_length": 16, "armhole": 15, "neck_depth": 4.5}}
+    ]}
+  ]
+}
