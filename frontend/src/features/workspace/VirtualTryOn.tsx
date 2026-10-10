@@ -73,7 +73,7 @@ export function VirtualTryOn({ customerId, customerName, garments, onBusy }: { c
       if (garment.variantId) form.append('variant_id', String(garment.variantId))
       const response = await fetch(`${base}/api/try-on/generate`, { method: 'POST', body: form, signal: controller.signal })
       const payload = await response.json()
-      if (!response.ok) throw new Error(payload.error?.message || payload.detail || 'Unable to generate preview.')
+      if (!response.ok) throw new Error(response.status >= 500 ? 'Your preview is unavailable right now. Please try again later or continue to customization.' : payload.error?.message || payload.detail || 'Unable to generate preview.')
       if (!payload.image?.startsWith('data:image/')) throw new Error('No preview was returned.')
       setResult(payload.image)
     } catch (e) { setError(e instanceof Error && e.name !== 'AbortError' ? e.message : 'Generation was interrupted or took too long. Please try again.') }
@@ -82,17 +82,32 @@ export function VirtualTryOn({ customerId, customerName, garments, onBusy }: { c
 
   return <Paper withBorder p="lg" className="tryon-studio"><Stack gap="lg">
     <Group justify="space-between"><Group><ThemeIcon color="grape" variant="light" size={48} radius="xl"><Sparkles size={24} /></ThemeIcon><Box><Text size="xs" c="grape" fw={800} tt="uppercase">Your fitting room</Text><Title order={2}>See the look before you customize</Title><Text c="dimmed" size="sm">Preview a finished garment on {customerName}.</Text></Box></Group><Badge color="grape" variant="light">Optional step</Badge></Group>
-    {status && !status.configured && <Alert color="yellow" title="Preview setup pending">{status.message} You can explore the photo inputs and continue your order.</Alert>}
+    {status && !status.configured && <Alert color="gray" title="Virtual try-on is currently unavailable">You can continue to customization and complete your order.</Alert>}
     {!options.length ? <Alert color="grape">This order contains fabric only. Virtual try-on needs a finished garment photograph; continue to customization to plan the design.</Alert> : <>
       <Select label="Selected merchandise" data={options.map((g) => ({ value: g.key, label: g.name }))} value={garment?.key ?? null} disabled={busy} onChange={(value) => { setSelected(value); setGarmentPhoto(null); setResult(''); setError('') }} />
       <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
         <Paper withBorder p="md" radius="md"><Stack><Group><Camera size={18} /><Text fw={800}>1. Customer photograph</Text></Group><Box className="tryon-photo">{personUrl ? <Image src={personUrl} alt={`${customerName}'s original photograph`} fit="contain" h={300} /> : <Stack align="center" gap="xs"><Camera size={36} /><Text fw={700}>A clear, front-facing photo</Text><Text size="sm" c="dimmed" ta="center">Show the full body for dresses or the upper body for tops.</Text></Stack>}</Box><FileInput label="Upload customer photo" placeholder="Choose JPEG or PNG" accept="image/jpeg,image/png" value={person} onChange={(file) => choosePhoto(file, 'person')} clearable disabled={busy} /><Text size="xs" c="dimmed">Up to 10 MB. Photos are used for this preview and are not saved to the catalog.</Text></Stack></Paper>
-        <Paper withBorder p="md" radius="md"><Stack><Group><ImagePlus size={18} /><Text fw={800}>2. Garment photograph</Text></Group><Box className="tryon-photo">{garmentUrl ? <Image src={garmentUrl} alt={garment?.name} fit="contain" h={300} /> : <Stack align="center" gap="xs"><ImagePlus size={36} /><Text fw={700}>Show the finished garment</Text><Text size="sm" c="dimmed" ta="center">Use the exact colour and variant selected for this order.</Text></Stack>}</Box><FileInput label={useCatalog ? 'Replace catalog photo (optional)' : 'Upload selected garment photo'} placeholder="Choose JPEG or PNG" accept="image/jpeg,image/png" value={garmentPhoto} onChange={(file) => choosePhoto(file, 'garment')} clearable disabled={busy} /><Text size="xs" c="dimmed">A clear flat-lay or on-model image works best. Fabric swatches need a separate design workflow.</Text></Stack></Paper>
+        <Paper withBorder p="md" radius="md"><Stack><Group><ImagePlus size={18} /><Text fw={800}>2. Garment photograph</Text></Group><Box className="tryon-photo">{garmentUrl ? <Image src={garmentUrl} alt={garment?.name} fit="contain" h={300} /> : <Stack align="center" gap="xs"><ImagePlus size={36} /><Text fw={700}>Show the finished garment</Text><Text size="sm" c="dimmed" ta="center">Use the exact colour and variant selected for this order.</Text></Stack>}</Box><FileInput label={useCatalog ? 'Replace catalog photo (optional)' : 'Upload selected garment photo'} placeholder="Choose JPEG or PNG" accept="image/jpeg,image/png" value={garmentPhoto} onChange={(file) => choosePhoto(file, 'garment')} clearable disabled={busy} /><Text size="xs" c="dimmed">A clear flat-lay or on-model image works best. Use a photograph of the finished garment.</Text></Stack></Paper>
       </SimpleGrid>
-      <Checkbox label="The customer agrees to send these photos to Google to generate their try-on preview." checked={consent} onChange={(e) => { setConsent(e.currentTarget.checked); setResult('') }} disabled={busy} />
+      <Checkbox label="The customer permits these photos to be processed for their virtual try-on preview." checked={consent} onChange={(e) => { setConsent(e.currentTarget.checked); setResult('') }} disabled={busy} />
       {error && <Alert color="red" role="alert">{error}</Alert>}
-      <Group><Button size="md" color="grape" leftSection={<Sparkles size={18} />} loading={busy} disabled={!status?.configured || !person || !garmentUrl || !consent} onClick={() => void generate()}>Generate try-on preview</Button><Text size="sm" c="dimmed" aria-live="polite">{busy ? 'Creating your preview. This can take up to two minutes…' : 'A visual preview; measurements still guide tailoring.'}</Text></Group>
-      {result && <Paper withBorder p="md"><Stack><Group justify="space-between"><Title order={3}>Your look</Title><Button component="a" href={result} download="boutiqueos-try-on.png" variant="light" color="grape">Download preview</Button></Group><SimpleGrid cols={{ base: 1, sm: 2 }}><Stack><Text fw={700}>Original</Text><Image src={personUrl} alt="Original customer photograph" fit="contain" h={420} /></Stack><Stack><Text fw={700}>AI try-on · {garment?.name}</Text><Image src={result} alt={`AI preview of ${customerName} wearing ${garment?.name}`} fit="contain" h={420} /></Stack></SimpleGrid><Text size="sm" c="dimmed">AI may change details of the garment or body. This preview does not predict size or fit.</Text></Stack></Paper>}
+      <Group><Button size="md" color="grape" leftSection={<Sparkles size={18} />} loading={busy} disabled={!status?.configured || !person || !garmentUrl || !consent} onClick={() => void generate()}>Preview on me</Button><Text size="sm" c="dimmed" aria-live="polite">{busy ? 'Creating your preview. This can take up to two minutes…' : 'A visual preview; measurements still guide tailoring.'}</Text></Group>
+      {result && <Paper withBorder p="md"><Stack><Group justify="space-between"><Title order={3}>Your look</Title><Button component="a" href={result} download="boutiqueos-try-on.png" variant="light" color="grape">Download preview</Button></Group><SimpleGrid cols={{ base: 1, sm: 2 }}><Stack><Text fw={700}>Original</Text><Image src={personUrl} alt="Original customer photograph" fit="contain" h={420} /></Stack><Stack><Text fw={700}>Virtual preview · {garment?.name}</Text><Image src={result} alt={`AI preview of ${customerName} wearing ${garment?.name}`} fit="contain" h={420} /></Stack></SimpleGrid><Text size="sm" c="dimmed">AI may change details of the garment or body. This preview does not predict size or fit.</Text></Stack></Paper>}
     </>}
   </Stack></Paper>
+}
+
+export function VirtualTryOnAdmin() {
+  const [status, setStatus] = useState<{ configured: boolean; message: string } | null>(null)
+  useEffect(() => {
+    const controller = new AbortController()
+    void fetch(`${base}/api/try-on/status`, { signal: controller.signal }).then(async (response) => {
+      if (!response.ok) throw new Error('Status unavailable')
+      return response.json() as Promise<{ configured: boolean; message: string }>
+    }).then(setStatus).catch(() => {
+      if (!controller.signal.aborted) setStatus({ configured: false, message: 'Unable to retrieve backend configuration status.' })
+    })
+    return () => controller.abort()
+  }, [])
+  return <Paper withBorder p="lg"><Stack gap="sm"><Group justify="space-between"><Title order={3}>Virtual Try-On integration</Title><Badge color={status?.configured ? 'teal' : 'gray'}>{status?.configured ? 'Configured' : status ? 'Needs attention' : 'Checking'}</Badge></Group><Text size="sm">Provider: Google Cloud · Virtual Try-On</Text><Text size="sm" c="dimmed">{status?.message || 'Checking backend configuration…'}</Text><Text size="xs" c="dimmed">Project, authentication, billing and model access are configured on the backend. Credential discovery does not verify billing or model access.</Text></Stack></Paper>
 }
