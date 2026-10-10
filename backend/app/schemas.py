@@ -36,6 +36,7 @@ class CustomerCreate(AppSchema):
 
 class CustomerRead(CustomerCreate):
     id: int
+    photo_url: str | None = None
 
 
 class ItemCreate(AppSchema):

@@ -4,6 +4,8 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.customer_fixtures import seed_customer_profiles
+from app.seed_photography import seed_photography
 from app.models import (
     ChannelConnection,
     ChannelConnectionStatus,
@@ -213,4 +215,6 @@ def seed_data(db: Session) -> None:
             )
         )
 
+    seed_customer_profiles(db, merchant.id)
+    seed_photography(db, merchant.id)
     db.commit()

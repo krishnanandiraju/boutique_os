@@ -52,6 +52,7 @@ export type Item = {
 }
 
 export type Customer = {
+  photo_url?: string | null
   id: number
   merchant_id: number
   name: string

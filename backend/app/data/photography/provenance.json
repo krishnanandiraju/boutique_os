@@ -144,6 +144,30 @@
       "prompt": "Original realistic full-body studio photograph of a fictional adult Indian woman, front-facing, plain grey crew-neck t-shirt and navy trousers, arms slightly away from torso, off-white background, no real-person likeness, logos or watermarks.",
       "reference": null,
       "sha256": "9b95d864a3573c031813a6d174a587dd4ea6c74f24b2b9a9ebc98f2e624089cd"
+    },
+    {
+      "file": "person-01-v2.png",
+      "source": "AI generated from original text prompt",
+      "created": "2026-10-10",
+      "prompt": "Use case: photorealistic-natural. Asset type: boutique customer photograph for virtual garment try-on. Original realistic photograph of adult Indian woman age 32, medium build, warm medium-brown skin, shoulder-length softly wavy black hair, wearing a plain fitted teal short-sleeve scoop-neck top and beige straight-leg trousers. Approximate body proportions inspired by this fictional character specification: bust 36 inches, waist 30 inches, hips 39 inches, shoulder width 14 inches, height 163 centimetres; these are illustrative proportions, not certified physical measurements. Full body head to bare feet visible with generous margins, standing front facing, arms relaxed slightly away from torso, friendly natural expression. Warm neutral softly lit indoor studio, natural skin texture, ordinary person rather than fashion-model retouching. Clothing opaque and modest, tailored close enough to see silhouette, no baggy fabric. No accessories, logos, text, measurement labels, watermark, collage, celebrity or real-person reference. Single portrait photograph.",
+      "reference": null,
+      "sha256": "d92232389430b49a5063f46b98aee977f4e202208fb896b315c5b37ddf0d1aad"
+    },
+    {
+      "file": "person-02-v2.png",
+      "source": "AI generated from original text prompt",
+      "created": "2026-10-10",
+      "prompt": "Use case: photorealistic-natural. Asset type: boutique customer photograph for virtual garment try-on. Original realistic photograph of adult Indian woman age 44, fuller curvy build, deep brown skin, black hair in a loose low bun, wearing a plain fitted dusty-rose three-quarter-sleeve round-neck top and dark olive straight-leg trousers. Approximate body proportions inspired by this fictional character specification: bust 42 inches, waist 36 inches, hips 45 inches, shoulder width 15 inches, height 160 centimetres; these are illustrative proportions, not certified physical measurements. Full body head to bare feet visible with generous margins, standing front facing, arms relaxed slightly away from torso, friendly natural expression. Warm neutral softly lit indoor studio, natural skin texture, ordinary person rather than fashion-model retouching. Clothing opaque and modest, tailored close enough to see silhouette, no baggy fabric. No accessories, logos, text, measurement labels, watermark, collage, celebrity or real-person reference. Single portrait photograph.",
+      "reference": null,
+      "sha256": "077272fdb1d8d529dc6ab2dc9356815521581df5fb3e11239a8f67cb59cd0edf"
+    },
+    {
+      "file": "person-03-v2.png",
+      "source": "AI generated from original text prompt",
+      "created": "2026-10-10",
+      "prompt": "Use case: photorealistic-natural. Asset type: boutique customer photograph for virtual garment try-on. Original realistic photograph of adult Indian woman age 28, petite slim build, golden-brown skin, sleek straight dark hair in a ponytail, wearing a plain fitted ivory short-sleeve crew-neck top and rust brown straight-leg trousers. Approximate body proportions inspired by this fictional character specification: bust 32 inches, waist 26 inches, hips 35 inches, shoulder width 13 inches, height 157 centimetres; these are illustrative proportions, not certified physical measurements. Full body head to bare feet visible with generous margins, standing front facing, arms relaxed slightly away from torso, friendly natural expression. Warm neutral softly lit indoor studio, natural skin texture, ordinary person rather than fashion-model retouching. Clothing opaque and modest, tailored close enough to see silhouette, no baggy fabric. No accessories, logos, text, measurement labels, watermark, collage, celebrity or real-person reference. Single portrait photograph.",
+      "reference": null,
+      "sha256": "2ec6584a32b2b5aba775fa945ab4962325d5fae0af83ed4469779bb693e3c5bf"
     }
   ]
 }
