@@ -1,43 +1,84 @@
-# AI credits and customer eligibility — coding handoff
+# BoutiqueOS AI tenant controls and credits — implementation handoff
 
-## Implemented foundation
+## What is now enforced
 
-- TenantAIPolicy and CustomerAIPolicy use separate tables; existing customer schema is unchanged.
-- Admin controls tenant enablement, New/Repeat/VIP segment eligibility, service selection and default monthly customer allowance.
-- CRM has Off / Follow boutique policy / Individual allowance controls.
-- Explicit Off wins; individual allowance bypasses segment filtering but never tenant disablement. Zero allowance denies policy eligibility.
-- Business service names: Standard Preview, Premium Preview 1, Design Studio 1. Standard's 1-credit charge is provisional; other charges are unset. No provider secrets or names appear in these owner panels.
-- Existing customer_segment is reused, case-insensitively. Other CRM segments are preserved but not automatically eligible.
-- Settings persist using /api/ai-policy. The API is disabled by default (AI_POLICY_ADMIN_ENABLED=false), and deliberately refuses production even if the flag is enabled.
-- For local review, set ENVIRONMENT=development and AI_POLICY_ADMIN_ENABLED=true; restart backend. Developer workspace resolves merchant 1 only. This is NOT tenant authentication.
+### Tenant-owned AI credits (B2B)
 
-## Recommended starting policy
+- Tenant credits are stored in `tenant_ai_credit_accounts` and only tracked at business level.
+- Ledger entries are auditable in `tenant_ai_credit_ledger` with `fund`, `reserve`, `charge`, and `release`.
+- Customers do not have wallet balances, purchases, or top-ups.
+- Successful generations are charged once; failed generations release reservations.
 
-New: no complimentary AI access. Repeat: 3 credits/month. VIP: manually selected, individual allowance 10 credits/month. Explicitly enable a few chosen customers through Individual allowance. These are proposed commercial limits, not provider prices. Repeat should eventually derive from two completed, paid orders; VIP remains owner-selected. Do not overwrite existing segment labels automatically.
+### Authorization model in this implementation
 
-## Required before rollout
+- Generation and policy logic resolve tenant/staff from authenticated context dependency (`get_auth_context`), not caller-supplied form/body tenant IDs.
+- Policy admin endpoints remain guarded behind:
+  - `AI_POLICY_ADMIN_ENABLED=true`
+  - `ENVIRONMENT=development`
+  - owner/admin/platform role checks
+- Funding endpoint (`POST /api/ai-policy/tenant/fund`) is restricted to `platform_ops`.
 
-1. Replace workspace_merchant with authenticated tenant context, and authorize owner/admin versus staff. Customers must not modify entitlements. No caller-supplied merchant ID may grant access. Test same-tenant and cross-tenant reads/writes. Rework the production guard only after this is implemented.
-2. Add platform service catalog with verified product capabilities, internal provider costs, public credit charges, secret references and connection readiness. Tenant entitlements must not manufacture service availability. Optional tenant-owned connections need an explicit billing policy. Secrets never go to browser/VITE variables.
-3. Add tenant credit account and auditable ledger, funded by platform-authorized grants/purchases. Do not expose a balance until computed from the ledger. Current credit_balance=null and generation_enabled=false accurately mark these as unfinished. Customer allowances are caps on tenant spending, not separate money balances.
-4. Enforce BOTH tenant balance and customer monthly cap on the server, before provider submission. Use atomic reservation, request idempotency and safe concurrent debits. Reserve service-specific credits; charge only on successful delivery; release on failure/cancellation. Define monthly boundary using tenant timezone. Tenant disablement and customer Off must be checked for every new request. Policy settings currently DO NOT control existing /api/try-on/generate or /design endpoints: wire enforcement into both; UI-only limits are insufficient.
-5. Add tenant global spending limit, staff limits and optional customer paid/top-up policy. No staff or customer may mint credits through policy updates. Service price changes must not alter existing reservations.
-6. Add ProductAIConfiguration: designated suitable image, category, photograph type, approved services and fabric-design requirement. Clean remaining product mannequin images. Saree/lehenga coverage needs visual validation; absence of Gemini is not itself a saree prohibition.
-7. Queue requests with bounded retries and tenant fairness. Free-provider quota is distinct from credits. Customer says Preparing your preview, never provider/model busy. On expiry show a neutral retry/continue message; release credits. No infinite spinner or unapproved paid fallback.
-8. Wire tenant-and-customer eligibility into the fitting room availability response. Hide/disable unavailable actions with meaningful neutral guidance; no owner balances, service secrets or raw provider errors in customer responses.
+### Eligibility and controls
 
-## Acceptance and tests
+- Segment eligibility uses existing CRM segments: `New`, `Repeat`, `VIP`.
+- Customer control is now:
+  - `follow_segment_policy`
+  - `allow`
+  - `disable`
+- `allow` can bypass segment policy, but cannot bypass:
+  - tenant disablement
+  - disabled service
+  - insufficient tenant credits
+  - product/service restrictions
+- Per-customer monthly limits are anti-abuse request caps, not customer credit allocations.
 
-- Cover tenant defaults, persistence, segment inheritance, manual grant, explicit Off, zero cap, tenant disablement, invalid limits and unknown service IDs.
-- Cover owner/staff/customer authorization, cross-tenant records and secret isolation.
-- Cover concurrent requests at final available credit, duplicate jobs, retry double-charge prevention, reservation expiry, refunds, month rollover and separately priced fabric + preview stages.
-- Cover product/service compatibility, provider readiness versus quota, unavailable services and funded/approved fallback only.
-- Test four finished products with all three customers (12 visual cases); record quota-blocked cases separately. Measurement accuracy is not established by these tests.
-- Run backend pytest and frontend lint/tests/build. Review draft PR; complete outstanding work before merging/deploying.
+### Service and product controls
 
-## Files
+- Business service labels:
+  - `Standard Preview`
+  - `Premium Preview 1`
+  - `Design Studio 1`
+- Per-service tenant config stores:
+  - enabled state
+  - credits per successful request
+  - optional per-service spending cap
+  - internal provider reference field (`provider_ref`) for platform-only metadata
+- Product AI config (`product_ai_configurations`) supports:
+  - AI enabled flag
+  - suitable photo required
+  - garment category
+  - required photo type
+  - approved services
 
-Backend: app/ai_policy.py, app/core/config.py, app/main.py, tests/test_ai_policy.py, .env.example.
-Frontend: features/workspace/AIPolicy.tsx, BoutiqueWorkspace.tsx, CustomerCrmModal.tsx.
+### Endpoint enforcement
 
-Frontend build is verified separately from live provider generation; this foundation makes no live generation API calls.
+- `/api/try-on/generate` and `/api/try-on/design` now:
+  - reserve tenant credits before generation
+  - prevent duplicate requests via idempotency key (or deterministic implicit key)
+  - run generation with bounded retries
+  - apply tenant fairness via per-tenant concurrency slot limits
+  - charge on success, release on failure
+- Customer-facing errors in fitting flow are neutralized (no provider internals or quota diagnostics).
+- Provider authorization headers were corrected to use real bearer tokens server-side.
+
+## Frontend/admin behavior updates
+
+- Tenant admin panel shows:
+  - tenant credit balance (available/reserved/spent)
+  - service enablement + credits per success + spending caps
+  - recent ledger usage history
+- Customer CRM AI control text now uses “Allow AI previews” and segment-following terminology.
+- Virtual try-on flow requires uploaded merchandise/fabric photos for generation (no catalog/mannequin fallback input for generation requests).
+- Fitting flow status messaging avoids provider names and raw provider errors.
+
+## Validation completed
+
+- Backend: `pytest` updated for policy/ledger reservation behaviors, idempotency conflict, and cross-tenant isolation checks.
+- Existing try-on related tests updated to seed tenant policy + funded account prerequisites.
+- Frontend code updated to match revised API contract and B2B wording.
+
+## Remaining production-hardening blockers
+
+1. The authenticated context currently supports development defaults and optional trusted dev headers; full production identity integration (real auth/session/JWT-backed tenant+role assertions) still needs to be wired before removing the production admin guard.
+2. Queue/fairness is implemented in-process; if multi-replica horizontal scale is required, move slot fairness and queueing to shared infrastructure.
+3. Visual validation matrix (4 finished products × 3 customers) still requires manual execution against live provider readiness and should be logged separately from quota/credit failures.

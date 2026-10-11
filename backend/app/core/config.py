@@ -27,6 +27,16 @@ class Settings(BaseSettings):
     google_cloud_project: str = ""
     google_cloud_location: str = "us-central1"
     tryon_model: str = "virtual-try-on-001"
+    workspace_merchant_id: int = 1
+    workspace_staff_role: str = "owner"
+    ai_trust_dev_headers: bool = False
+    ai_tenant_timezone: str = "Asia/Kolkata"
+    ai_max_concurrent_jobs_per_tenant: int = 2
+    ai_generation_retry_limit: int = 3
+    ai_generation_retry_backoff_ms: int = 300
+    ai_default_standard_preview_credits: int = 1
+    ai_default_premium_preview_1_credits: int = 2
+    ai_default_design_studio_1_credits: int = 3
 
     model_config = SettingsConfigDict(
         env_file=".env",

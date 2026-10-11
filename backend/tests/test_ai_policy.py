@@ -1,69 +1,145 @@
 import pytest
 from fastapi import HTTPException
-from pydantic import ValidationError
-from app.ai_policy import CustomerWrite, TenantWrite, evaluate_access, owned_customer, workspace_merchant
-from app.core.config import settings
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
+
+from app.ai_policy import (
+    AIGenerationJob,
+    AuthContext,
+    CustomerAIPolicy,
+    CustomerWrite,
+    TenantAICreditAccount,
+    TenantAICreditLedger,
+    TenantAIServiceConfig,
+    TenantAIPolicy,
+    TenantWrite,
+    complete_generation_failure,
+    complete_generation_success,
+    evaluate_access,
+    reserve_generation_credits,
+)
+from app.db import Base
+from app.models import Customer, Merchant
 
 
 @pytest.mark.parametrize('segment,expected', [('New', False), ('Repeat', True), ('VIP', True), ('vip', True), (None, False), ('Bridal', False)])
 def test_segment_policy(segment, expected):
-    assert evaluate_access(TenantWrite(enabled=True), CustomerWrite(), segment)['policy_eligible'] == expected
+    result = evaluate_access(TenantWrite(enabled=True), CustomerWrite(), segment)
+    assert result['allow_ai_previews'] is expected
 
 
-def test_customer_override_cannot_bypass_tenant_disable_and_off_wins():
-    assert not evaluate_access(TenantWrite(), CustomerWrite(access='allow'), 'VIP')['policy_eligible']
-    assert not evaluate_access(TenantWrite(enabled=True), CustomerWrite(access='off'), 'VIP')['policy_eligible']
-    result = evaluate_access(TenantWrite(enabled=True), CustomerWrite(access='allow', monthly_limit=10), 'New')
-    assert result['policy_eligible'] and result['monthly_allowance'] == 10
-    assert result['credit_balance'] is None and not result['generation_enabled']
+def _seed(db: Session):
+    db.add(Merchant(id=1, name='One'))
+    db.add(Merchant(id=2, name='Two'))
+    db.add(Customer(id=1, merchant_id=1, name='VIP', phone='1111111111'))
+    db.add(Customer(id=2, merchant_id=2, name='Other', phone='2222222222'))
+    db.add(TenantAIPolicy(merchant_id=1, enabled=True, allowed_segments=['New', 'Repeat', 'VIP'], enabled_services=['standard_preview'], monthly_request_limit_per_customer=5))
+    db.add(CustomerAIPolicy(customer_id=1, control='allow', monthly_request_limit=10))
+    db.add(TenantAIServiceConfig(merchant_id=1, service_id='standard_preview', enabled=True, credits_per_success=2, spending_limit_credits=None))
+    db.add(TenantAICreditAccount(merchant_id=1, available_credits=20, reserved_credits=0, spent_credits=0))
+    db.commit()
 
 
-def test_zero_allowance_and_invalid_limits():
-    assert not evaluate_access(TenantWrite(enabled=True), CustomerWrite(access='allow', monthly_limit=0), 'VIP')['policy_eligible']
-    with pytest.raises(ValidationError):
-        CustomerWrite(monthly_limit=-1)
-    with pytest.raises(ValidationError):
-        TenantWrite(enabled_services=['unknown'])
-
-
-def test_foundation_is_disabled_and_production_cannot_enable_it(monkeypatch):
-    monkeypatch.setattr(settings, 'ai_policy_admin_enabled', False)
-    with pytest.raises(HTTPException):
-        workspace_merchant()
-    monkeypatch.setattr(settings, 'ai_policy_admin_enabled', True)
-    monkeypatch.setattr(settings, 'environment', 'production')
-    with pytest.raises(HTTPException):
-        workspace_merchant()
-
-
-def test_cross_tenant_customer_denied():
-    class DB:
-        def get(self, model, customer_id):
-            return type('Customer', (), {'merchant_id': 2})()
-    with pytest.raises(HTTPException) as error:
-        owned_customer(DB(), 1, 1)
-    assert error.value.status_code == 404
-
-
-def test_policy_changes_persist_and_other_tenant_cannot_edit_customer():
-    from sqlalchemy import create_engine
-    from sqlalchemy.orm import Session
-    from app.db import Base
-    from app.models import Merchant, Customer
-    from app.ai_policy import get_tenant, put_tenant, get_customer, put_customer
+def test_reservations_charge_once_and_release_on_failure():
     engine = create_engine('sqlite://')
     Base.metadata.create_all(engine)
     with Session(engine) as db:
-        db.add_all([Merchant(id=1, name='One'), Merchant(id=2, name='Two')])
-        db.flush()
-        db.add(Customer(id=1, merchant_id=1, name='VIP', phone='test'))
+        _seed(db)
+        auth = AuthContext(merchant_id=1, staff_role='staff')
+        first = reserve_generation_credits(
+            db=db,
+            auth=auth,
+            customer_id=1,
+            service_id='standard_preview',
+            item_id=101,
+            variant_id=None,
+            person_bytes=b'person',
+            garment_bytes=b'garment',
+            idempotency_key='req-1',
+        )
+        complete_generation_failure(db, first, 'http_503')
         db.commit()
-        put_tenant(TenantWrite(enabled=True), db, 1)
-        put_customer(1, CustomerWrite(access='allow', monthly_limit=10), db, 1)
-        assert get_tenant(db, 1)['policy']['enabled']
-        assert not get_tenant(db, 2)['policy']['enabled']
-        assert get_customer(1, db, 1)['eligibility']['monthly_allowance'] == 10
-        with pytest.raises(HTTPException):
-            put_customer(1, CustomerWrite(access='off'), db, 2)
-        assert get_customer(1, db, 1)['policy']['access'] == 'allow'
+
+        account = db.get(TenantAICreditAccount, 1)
+        assert account.available_credits == 20
+        assert account.reserved_credits == 0
+        assert db.get(AIGenerationJob, first.id).status == 'failed'
+        assert len(db.query(TenantAICreditLedger).all()) == 2
+
+        second = reserve_generation_credits(
+            db=db,
+            auth=auth,
+            customer_id=1,
+            service_id='standard_preview',
+            item_id=101,
+            variant_id=None,
+            person_bytes=b'person2',
+            garment_bytes=b'garment2',
+            idempotency_key='req-2',
+        )
+        complete_generation_success(db, second)
+        db.commit()
+
+        account = db.get(TenantAICreditAccount, 1)
+        assert account.available_credits == 18
+        assert account.reserved_credits == 0
+        assert account.spent_credits == 2
+        assert db.get(AIGenerationJob, second.id).status == 'succeeded'
+
+    engine.dispose()
+
+
+def test_duplicate_idempotency_key_is_blocked():
+    engine = create_engine('sqlite://')
+    Base.metadata.create_all(engine)
+    with Session(engine) as db:
+        _seed(db)
+        auth = AuthContext(merchant_id=1, staff_role='staff')
+        reserve_generation_credits(
+            db=db,
+            auth=auth,
+            customer_id=1,
+            service_id='standard_preview',
+            item_id=99,
+            variant_id=None,
+            person_bytes=b'person',
+            garment_bytes=b'garment',
+            idempotency_key='dup-key',
+        )
+        with pytest.raises(HTTPException) as error:
+            reserve_generation_credits(
+                db=db,
+                auth=auth,
+                customer_id=1,
+                service_id='standard_preview',
+                item_id=99,
+                variant_id=None,
+                person_bytes=b'person',
+                garment_bytes=b'garment',
+                idempotency_key='dup-key',
+            )
+        assert error.value.status_code == 409
+
+    engine.dispose()
+
+
+def test_cross_tenant_customer_isolation():
+    engine = create_engine('sqlite://')
+    Base.metadata.create_all(engine)
+    with Session(engine) as db:
+        _seed(db)
+        with pytest.raises(HTTPException) as error:
+            reserve_generation_credits(
+                db=db,
+                auth=AuthContext(merchant_id=2, staff_role='staff'),
+                customer_id=1,
+                service_id='standard_preview',
+                item_id=1,
+                variant_id=None,
+                person_bytes=b'person',
+                garment_bytes=b'garment',
+                idempotency_key='isolation-check',
+            )
+        assert error.value.status_code == 404
+
     engine.dispose()

@@ -1,21 +1,31 @@
 """Stateless try-on: customer photographs are never added to public catalog media."""
+
 import base64
 import io
 import re
 
 import google.auth
 import httpx
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Response, UploadFile
 from google.auth.exceptions import GoogleAuthError
-from google.auth.transport.requests import Request
+from google.auth.transport.requests import Request as GoogleRequest
 from PIL import Image, ImageOps, UnidentifiedImageError
 from sqlalchemy.orm import Session
 
+from app.ai_policy import (
+    AuthContext,
+    complete_generation_failure,
+    complete_generation_success,
+    get_auth_context,
+    reserve_generation_credits,
+    run_generation_with_retries,
+    tenant_generation_slot,
+)
+from app.catalog_models import ItemVariant
 from app.core.config import settings
 from app.db import get_db
-from app.models import Customer, Item
-from app.catalog_models import ItemVariant
 from app.fashn_tryon import generate_fashn_preview
+from app.models import Customer, Item
 
 router = APIRouter(prefix="/api/try-on", tags=["Virtual try-on"])
 MAX_BYTES = 10 * 1024 * 1024
@@ -32,30 +42,25 @@ def credentials():
 @router.get("/status")
 def status(response: Response):
     response.headers["Cache-Control"] = "no-store"
-    reason = "Google Virtual Try-On has not been enabled by the boutique."
-    ready = settings.tryon_enabled and bool(settings.google_cloud_project)
-    if settings.tryon_enabled and settings.tryon_provider == "huggingface":
-        ready = True
-        reason = "Free preview service selected; availability depends on its queue and daily allowance."
-    elif ready and settings.tryon_provider == "google":
-        try:
-            credentials()
-        except HTTPException:
-            ready = False
-            reason = "Google Cloud authentication needs to be connected."
-    elif settings.tryon_enabled:
-        reason = "A Google Cloud project needs to be connected."
+    ready = settings.tryon_enabled and settings.tryon_provider in {"google", "huggingface"}
+    if ready and settings.tryon_provider == "google":
+        ready = bool(settings.google_cloud_project)
+        if ready:
+            try:
+                credentials()
+            except HTTPException:
+                ready = False
     design_ready = settings.fabric_design_enabled and bool(settings.google_cloud_project)
     if design_ready:
         try:
             credentials()
         except HTTPException:
             design_ready = False
-    if settings.tryon_provider not in {"google", "huggingface"}:
-        ready = False
-        reason = "A supported preview provider needs to be selected."
-    return {"provider": settings.tryon_provider, "design_configured": design_ready, "configured": ready,
-            "message": reason if settings.tryon_provider == "huggingface" else "Ready to generate a preview." if ready else reason}
+    return {
+        "design_configured": design_ready,
+        "configured": ready,
+        "message": "Preparing your preview is available." if ready else "Preview generation is not available right now.",
+    }
 
 
 def read_image(file: UploadFile) -> bytes:
@@ -68,7 +73,6 @@ def read_image(file: UploadFile) -> bytes:
                 raise HTTPException(422, "Use a JPEG or PNG photograph.")
             if image.width * image.height > 20_000_000 or min(image.size) < 64:
                 raise HTTPException(422, "Use a clear image between 64 pixels and 20 megapixels.")
-            # Remove EXIF/location metadata before sending to the preview provider.
             image.load()
             image = ImageOps.exif_transpose(image).convert("RGB")
             output = io.BytesIO()
@@ -86,7 +90,7 @@ def generate_preview(person: bytes, garment: bytes) -> dict:
         raise HTTPException(503, "Google Virtual Try-On configuration is invalid.")
     auth = credentials()
     try:
-        auth.refresh(Request())
+        auth.refresh(GoogleRequest())
     except GoogleAuthError as exc:
         raise HTTPException(503, "Unable to authenticate with Google Cloud.") from exc
     host = "aiplatform.googleapis.com" if region == "global" else f"{region}-aiplatform.googleapis.com"
@@ -101,33 +105,47 @@ def generate_preview(person: bytes, garment: bytes) -> dict:
     try:
         result = httpx.post(url, json=body, headers={"Authorization": f"Bearer {auth.token}"}, timeout=120)
     except httpx.TimeoutException as exc:
-        raise HTTPException(504, "The preview took too long. Please try again.") from exc
+        raise HTTPException(504, "Preview provider timed out.") from exc
     except httpx.RequestError as exc:
-        raise HTTPException(502, "Google Virtual Try-On is temporarily unavailable.") from exc
+        raise HTTPException(502, "Preview provider is unavailable.") from exc
     if result.status_code != 200:
-        messages = {429: "Google is busy or the generation quota has been reached.",
-                    403: "Google Cloud model access or billing needs to be checked.",
-                    404: "The try-on model is unavailable in the configured region."}
-        raise HTTPException(502, messages.get(result.status_code, "Google could not create this preview. Try clearer photographs."))
+        raise HTTPException(503, "Preview provider could not create this preview.")
     try:
         predictions = result.json().get("predictions", [])
         image = next((p for p in predictions if p.get("bytesBase64Encoded")), None)
         if not image:
-            raise HTTPException(422, "No preview was returned. Try a clear front-facing photograph and a finished garment.")
+            raise HTTPException(422, "No preview was returned.")
         mime = image.get("mimeType", "image/png")
         if mime not in {"image/png", "image/jpeg"}:
             raise ValueError("Unexpected output type")
         base64.b64decode(image["bytesBase64Encoded"], validate=True)
         return {"image": f"data:{mime};base64,{image['bytesBase64Encoded']}", "model": model}
     except (ValueError, TypeError, AttributeError) as exc:
-        raise HTTPException(502, "Google returned an invalid preview.") from exc
+        raise HTTPException(502, "Preview provider returned an invalid preview.") from exc
+
+
+def _neutral_tryon_error(exc: HTTPException) -> HTTPException:
+    if exc.status_code in {402, 403, 404, 409, 422, 429}:
+        return exc
+    return HTTPException(503, "We couldn’t complete this preview right now. Please retry or continue.")
 
 
 @router.post("/generate")
-def generate(response: Response, person: UploadFile = File(...), garment: UploadFile = File(...),
-             consent: bool = Form(...), customer_id: int = Form(...), item_id: int = Form(...),
-             variant_id: int | None = Form(None), category: str = Form("tops"),
-             photo_type: str = Form("flat-lay"), db: Session = Depends(get_db)):
+def generate(
+    response: Response,
+    request: Request,
+    person: UploadFile = File(...),
+    garment: UploadFile = File(...),
+    consent: bool = Form(...),
+    customer_id: int = Form(...),
+    item_id: int = Form(...),
+    variant_id: int | None = Form(None),
+    category: str = Form("tops"),
+    photo_type: str = Form("flat-lay"),
+    garment_source: str = Form("upload"),
+    db: Session = Depends(get_db),
+    auth: AuthContext = Depends(get_auth_context),
+):
     response.headers["Cache-Control"] = "no-store"
     if not consent:
         raise HTTPException(422, "Customer permission is required to use their photograph.")
@@ -142,7 +160,31 @@ def generate(response: Response, person: UploadFile = File(...), garment: Upload
         variant = db.get(ItemVariant, variant_id)
         if not variant or variant.item_id != item.id:
             raise HTTPException(422, "This variant does not belong to the selected garment.")
+    if garment_source == "catalog":
+        raise HTTPException(422, "Use a suitable garment photograph before creating AI previews.")
+
     person_bytes, garment_bytes = read_image(person), read_image(garment)
-    if settings.tryon_provider == "huggingface":
-        return generate_fashn_preview(person_bytes, garment_bytes, category, photo_type)
-    return generate_preview(person_bytes, garment_bytes)
+    job = reserve_generation_credits(
+        db=db,
+        auth=auth,
+        customer_id=customer_id,
+        service_id='standard_preview',
+        item_id=item_id,
+        variant_id=variant_id,
+        person_bytes=person_bytes,
+        garment_bytes=garment_bytes,
+        idempotency_key=request.headers.get("Idempotency-Key"),
+    )
+    try:
+        with tenant_generation_slot(auth.merchant_id):
+            if settings.tryon_provider == "huggingface":
+                result = run_generation_with_retries(lambda: generate_fashn_preview(person_bytes, garment_bytes, category, photo_type))
+            else:
+                result = run_generation_with_retries(lambda: generate_preview(person_bytes, garment_bytes))
+        complete_generation_success(db, job)
+        db.commit()
+        return result
+    except HTTPException as exc:
+        complete_generation_failure(db, job, f'http_{exc.status_code}')
+        db.commit()
+        raise _neutral_tryon_error(exc)

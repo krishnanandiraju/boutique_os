@@ -9,6 +9,8 @@ from fastapi.testclient import TestClient
 from PIL import Image
 
 from app import tryon
+from app.ai_policy import CustomerAIPolicy, TenantAICreditAccount, TenantAIServiceConfig, TenantAIPolicy
+from app.db import SessionLocal
 from app.main import app
 
 
@@ -34,6 +36,31 @@ def files():
     return {"person": ("person.png", photo(), "image/png"), "garment": ("garment.png", photo(), "image/png")}
 
 
+def enable_ai_for_customer(customer_id: int, merchant_id: int = 1):
+    with SessionLocal() as db:
+        policy = db.get(TenantAIPolicy, merchant_id) or TenantAIPolicy(merchant_id=merchant_id)
+        policy.enabled = True
+        policy.allowed_segments = ['New', 'Repeat', 'VIP']
+        policy.enabled_services = ['standard_preview', 'design_studio_1']
+        policy.monthly_request_limit_per_customer = 20
+        db.add(policy)
+
+        service = db.get(TenantAIServiceConfig, (merchant_id, 'standard_preview')) or TenantAIServiceConfig(merchant_id=merchant_id, service_id='standard_preview')
+        service.enabled = True
+        service.credits_per_success = 1
+        db.add(service)
+
+        customer_policy = db.get(CustomerAIPolicy, customer_id) or CustomerAIPolicy(customer_id=customer_id)
+        customer_policy.control = 'allow'
+        customer_policy.monthly_request_limit = 20
+        db.add(customer_policy)
+
+        account = db.get(TenantAICreditAccount, merchant_id) or TenantAICreditAccount(merchant_id=merchant_id, available_credits=0, reserved_credits=0, spent_credits=0)
+        account.available_credits = max(account.available_credits or 0, 50)
+        db.add(account)
+        db.commit()
+
+
 def test_disabled_never_calls_google(client, monkeypatch):
     monkeypatch.setattr(tryon.settings, "tryon_enabled", False)
     google = Mock()
@@ -55,6 +82,7 @@ def test_consent_and_valid_photos_required(client, monkeypatch):
     bad_files = files(); bad_files["person"] = ("fake.png", b"not an image", "image/png")
     assert client.post("/api/try-on/generate", data=data, files=bad_files).status_code == 422
     google.assert_not_called()
+    enable_ai_for_customer(data["customer_id"])
     response = client.post("/api/try-on/generate", data=data, files=files())
     assert response.status_code == 200
     assert response.headers["cache-control"] == "no-store"
@@ -82,7 +110,7 @@ def test_google_contract_and_errors(monkeypatch):
     request.return_value = httpx.Response(403, json={"error": "private provider details"})
     with pytest.raises(HTTPException) as failure:
         tryon.generate_preview(photo(), photo())
-    assert failure.value.status_code == 502
+    assert failure.value.status_code == 503
     assert "private provider" not in failure.value.detail
     request.return_value = httpx.Response(200, json={"predictions": []})
     with pytest.raises(HTTPException) as failure:

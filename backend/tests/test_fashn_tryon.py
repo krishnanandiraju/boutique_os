@@ -10,6 +10,8 @@ from fastapi.testclient import TestClient
 from PIL import Image
 
 from app import fashn_tryon, tryon
+from app.ai_policy import CustomerAIPolicy, TenantAICreditAccount, TenantAIServiceConfig, TenantAIPolicy
+from app.db import SessionLocal
 from app.main import app
 
 
@@ -36,6 +38,30 @@ def provider(monkeypatch, event="complete", output_url=None, upload_status=200):
     original = httpx.Client
     monkeypatch.setattr(fashn_tryon.httpx, "Client", lambda **kwargs: original(transport=httpx.MockTransport(handler), **kwargs))
     return calls
+
+
+def enable_ai_for_customer(customer_id: int, merchant_id: int = 1):
+    with SessionLocal() as db:
+        policy = db.get(TenantAIPolicy, merchant_id) or TenantAIPolicy(merchant_id=merchant_id)
+        policy.enabled = True
+        policy.allowed_segments = ['New', 'Repeat', 'VIP']
+        policy.enabled_services = ['standard_preview', 'design_studio_1']
+        db.add(policy)
+
+        service = db.get(TenantAIServiceConfig, (merchant_id, 'standard_preview')) or TenantAIServiceConfig(merchant_id=merchant_id, service_id='standard_preview')
+        service.enabled = True
+        service.credits_per_success = 1
+        db.add(service)
+
+        customer_policy = db.get(CustomerAIPolicy, customer_id) or CustomerAIPolicy(customer_id=customer_id)
+        customer_policy.control = 'allow'
+        customer_policy.monthly_request_limit = 20
+        db.add(customer_policy)
+
+        account = db.get(TenantAICreditAccount, merchant_id) or TenantAICreditAccount(merchant_id=merchant_id, available_credits=0, reserved_credits=0, spent_credits=0)
+        account.available_credits = max(account.available_credits or 0, 50)
+        db.add(account)
+        db.commit()
 
 
 def test_free_api_upload_queue_download_contract(monkeypatch):
@@ -80,6 +106,7 @@ def test_free_provider_route_still_requires_permission(monkeypatch):
         assert client.post("/api/try-on/generate", data=data, files=files).status_code == 422
         preview.assert_not_called()
         data["consent"] = "true"
+        enable_ai_for_customer(customer["id"])
         assert client.post("/api/try-on/generate", data=data, files=files).status_code == 200
         assert preview.call_args.args[2:] == ("tops", "model")
         assert preview.call_args.args[0].startswith(b"\xff\xd8")

@@ -7,6 +7,8 @@ from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from PIL import Image
 from app import fabric_design, tryon
+from app.ai_policy import CustomerAIPolicy, TenantAICreditAccount, TenantAIServiceConfig, TenantAIPolicy
+from app.db import SessionLocal
 from app.main import app
 
 
@@ -18,6 +20,30 @@ def photo():
 
 def files():
     return {name: (f'{name}.png', photo(), 'image/png') for name in ('person', 'garment')}
+
+
+def enable_design_ai_for_customer(customer_id: int, merchant_id: int = 1):
+    with SessionLocal() as db:
+        policy = db.get(TenantAIPolicy, merchant_id) or TenantAIPolicy(merchant_id=merchant_id)
+        policy.enabled = True
+        policy.allowed_segments = ['New', 'Repeat', 'VIP']
+        policy.enabled_services = ['standard_preview', 'design_studio_1']
+        db.add(policy)
+
+        service = db.get(TenantAIServiceConfig, (merchant_id, 'design_studio_1')) or TenantAIServiceConfig(merchant_id=merchant_id, service_id='design_studio_1')
+        service.enabled = True
+        service.credits_per_success = 1
+        db.add(service)
+
+        customer_policy = db.get(CustomerAIPolicy, customer_id) or CustomerAIPolicy(customer_id=customer_id)
+        customer_policy.control = 'allow'
+        customer_policy.monthly_request_limit = 20
+        db.add(customer_policy)
+
+        account = db.get(TenantAICreditAccount, merchant_id) or TenantAICreditAccount(merchant_id=merchant_id, available_credits=0, reserved_credits=0, spent_credits=0)
+        account.available_credits = max(account.available_credits or 0, 50)
+        db.add(account)
+        db.commit()
 
 
 def test_fabric_design_contract_and_no_image_response(monkeypatch):
@@ -50,6 +76,7 @@ def test_fabric_design_permissions_type_and_flag(monkeypatch):
         data['consent'] = 'false'
         assert client.post('/api/try-on/design', data=data, files=files()).status_code == 422
         data['consent'] = 'true'
+        enable_design_ai_for_customer(data['customer_id'])
         response = client.post('/api/try-on/design', data=data, files=files())
         assert response.status_code == 200
         assert response.headers['cache-control'] == 'no-store'
