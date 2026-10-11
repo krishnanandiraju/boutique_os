@@ -168,6 +168,14 @@
       "prompt": "Use case: photorealistic-natural. Asset type: boutique customer photograph for virtual garment try-on. Original realistic photograph of adult Indian woman age 28, petite slim build, golden-brown skin, sleek straight dark hair in a ponytail, wearing a plain fitted ivory short-sleeve crew-neck top and rust brown straight-leg trousers. Approximate body proportions inspired by this fictional character specification: bust 32 inches, waist 26 inches, hips 35 inches, shoulder width 13 inches, height 157 centimetres; these are illustrative proportions, not certified physical measurements. Full body head to bare feet visible with generous margins, standing front facing, arms relaxed slightly away from torso, friendly natural expression. Warm neutral softly lit indoor studio, natural skin texture, ordinary person rather than fashion-model retouching. Clothing opaque and modest, tailored close enough to see silhouette, no baggy fabric. No accessories, logos, text, measurement labels, watermark, collage, celebrity or real-person reference. Single portrait photograph.",
       "reference": null,
       "sha256": "2ec6584a32b2b5aba775fa945ab4962325d5fae0af83ed4469779bb693e3c5bf"
+    },
+    {
+      "file": "kurta-front-clean.png",
+      "source": "AI edit of original BoutiqueOS product photography",
+      "created": "2026-10-11",
+      "reference": "kurta-front.png",
+      "prompt": "Remove mannequin and wooden stand; garment-only photograph on warm-white background. Preserve blue kurta, white embroidery, neckline, sleeves, hem and side slits.",
+      "sha256": "511cdcf5d1765e579cb49fcf8584b088d391affc882c1183a6a5ae5c8b8ec3f7"
     }
   ]
 }
