@@ -100,3 +100,24 @@ def test_existing_product_photos_are_preserved():
         db.commit()
         rows = list(db.scalars(select(MediaAsset).where(MediaAsset.item_id == item.id)))
         assert len(rows) == 1 and rows[0].original_filename == 'shop-owner-photo.png'
+
+
+def test_legacy_kurta_front_is_upgraded_without_duplicating_gallery():
+    from app.models import Item, MediaAsset
+    from app.seed_photography import seed_photography
+    with reset() as db:
+        item = db.scalar(select(Item).where(Item.name == 'Cotton Kurta - Blue'))
+        front = db.scalar(select(MediaAsset).where(MediaAsset.item_id == item.id, MediaAsset.is_primary == True))
+        front_id = front.id
+        front.original_filename = 'kurta-front.png'
+        front.storage_key = f'{item.merchant_id}/products/{item.id}/kurta-front.png'
+        db.commit()
+        seed_photography(db, item.merchant_id)
+        db.commit()
+        assert front.id == front_id and front.is_primary
+        assert front.original_filename == 'kurta-front-clean.png'
+        assert front.storage_key.endswith('/kurta-front-clean.png')
+        assert len(list(db.scalars(select(MediaAsset).where(MediaAsset.item_id == item.id)))) == 3
+        seed_photography(db, item.merchant_id)
+        db.commit()
+        assert len(list(db.scalars(select(MediaAsset).where(MediaAsset.item_id == item.id)))) == 3

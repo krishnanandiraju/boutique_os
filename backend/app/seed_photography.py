@@ -27,8 +27,23 @@ def seed_photography(db: Session, merchant_id: int) -> None:
             continue
         media = list(db.scalars(select(MediaAsset).where(MediaAsset.item_id == item.id)))
         expected = [f'{product_key}-{view}.png' for view in ('front', 'alternate', 'detail')]
-        if any(asset.original_filename not in expected for asset in media):
+        if product_key == 'kurta':
+            expected[0] = 'kurta-front-clean.png'
+        allowed = set(expected) | ({'kurta-front.png'} if product_key == 'kurta' else set())
+        if any(asset.original_filename not in allowed for asset in media):
             continue
+        # Upgrade only the bundled front photograph; preserve uploaded owner photos.
+        legacy = next((asset for asset in media if asset.original_filename == 'kurta-front.png'
+                       and asset.storage_key == f'{merchant_id}/products/{item.id}/kurta-front.png'), None)
+        if product_key == 'kurta' and legacy:
+            filename = 'kurta-front-clean.png'
+            key = f'{merchant_id}/products/{item.id}/{filename}'
+            path = ensure_file(filename, key)
+            with Image.open(path) as image:
+                legacy.width, legacy.height = image.size
+            legacy.storage_key = key
+            legacy.original_filename = filename
+            legacy.file_size_bytes = path.stat().st_size
         has_primary = any(asset.is_primary for asset in media)
         for index, filename in enumerate(expected):
             existing = next((asset for asset in media if asset.original_filename == filename), None)
