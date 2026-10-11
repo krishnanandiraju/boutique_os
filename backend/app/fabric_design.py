@@ -85,7 +85,7 @@ def design(
     response: Response,
     request: Request,
     person: UploadFile = File(...),
-    garment: UploadFile = File(...),
+    garment: UploadFile | None = File(None),
     consent: bool = Form(...),
     customer_id: int = Form(...),
     item_id: int = Form(...),
@@ -109,10 +109,7 @@ def design(
         variant = db.get(ItemVariant, variant_id)
         if not variant or variant.item_id != item.id:
             raise HTTPException(422, 'This variant does not belong to the selected fabric.')
-    if garment_source == 'catalog':
-        raise HTTPException(422, 'Use a suitable fabric photograph before creating AI previews.')
-
-    person_bytes, garment_bytes = tryon.read_image(person), tryon.read_image(garment)
+    person_bytes, garment_bytes = tryon.read_image(person), tryon.read_garment(db, item, variant_id, garment_source, garment)
     job = reserve_generation_credits(
         db=db,
         auth=auth,
