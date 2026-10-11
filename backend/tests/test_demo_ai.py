@@ -55,3 +55,23 @@ def test_merchant_identity_must_match(db):
     db.commit()
     demo_ai.provision_demo_ai(db)
     assert db.get(TenantAICreditAccount,1) is None
+
+
+def test_existing_kurta_category_is_repaired_without_refunding_or_enabling(db):
+    from app.ai_policy import ProductAIConfiguration
+    from app.models import Item, InventoryType
+    db.add(Item(id=3, merchant_id=1, name='Cotton Kurta - Blue', inventory_type=InventoryType.STOCKED, category='Kurta', selling_price=2499))
+    db.commit()
+    demo_ai.provision_demo_ai(db)
+    product = db.scalar(select(ProductAIConfiguration))
+    assert product.garment_category == 'one-pieces'
+    product.garment_category = 'tops'
+    product.ai_enabled = False
+    account = db.get(TenantAICreditAccount, 1)
+    account.available_credits = 87
+    db.commit()
+    demo_ai.provision_demo_ai(db)
+    assert product.garment_category == 'one-pieces'
+    assert not product.ai_enabled
+    assert account.available_credits == 87
+    assert len(db.scalars(select(TenantAICreditLedger)).all()) == 1

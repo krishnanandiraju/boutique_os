@@ -23,6 +23,13 @@ def provision_demo_ai(db: Session) -> None:
     if db.scalar(select(TenantAICreditLedger.id).where(
             TenantAICreditLedger.merchant_id == merchant.id,
             TenantAICreditLedger.note == MARKER)) is not None:
+        # Repair the old bundled kurta category without funding or re-enabling anyone.
+        product = db.scalar(select(ProductAIConfiguration).join(Item, Item.id == ProductAIConfiguration.item_id).where(
+            ProductAIConfiguration.merchant_id == merchant.id,
+            Item.name == 'Cotton Kurta - Blue', ProductAIConfiguration.variant_id.is_(None)))
+        if product and product.garment_category == 'tops':
+            product.garment_category = 'one-pieces'
+            db.commit()
         return
     policy = db.get(TenantAIPolicy, merchant.id) or TenantAIPolicy(merchant_id=merchant.id)
     policy.enabled = True
@@ -52,7 +59,7 @@ def provision_demo_ai(db: Session) -> None:
                 merchant_id=merchant.id, item_id=item.id)
         product.ai_enabled = True
         product.suitable_photograph_required = True
-        product.garment_category = 'tops'
+        product.garment_category = 'one-pieces'
         product.required_photo_type = 'flat-lay'
         product.approved_services = ['standard_preview']
         db.add(product)

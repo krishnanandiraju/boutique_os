@@ -92,3 +92,14 @@ The fitting room displays the selected product photograph automatically. Reviewe
 ## Meera Boutique demo provisioning
 
 The demo Azure workflow explicitly enables AI_DEMO_BOOTSTRAP_ENABLED. Startup provisions only merchant 1 named Meera Boutique, only with the free Hugging Face provider enabled: Standard Preview at one tenant credit per success, a one-time ledger grant of 100 credits, and access for Anjali Rao, Priya Sharma and Neha Reddy. The reviewed Cotton Kurta product is enabled. Other tenants, premium services and production admin write guards are unchanged. A ledger marker prevents restart top-ups or repeated policy overwrites. Set the flag false on deployments outside this demo. Each preview click now supplies a fresh idempotency key so repeat demonstrations work; provider retries retain the same reservation. No paid provider is enabled.
+
+
+### Long-kurta correction and demo acceptance
+
+The blue Cotton Kurta is knee length. Its reviewed catalog input uses `one-pieces`, not `tops`, across Anjali, Priya and Neha. Backend catalog generation corrects stale browser requests. Existing demo product settings are repaired without another credit grant or changing customer access. Blouses remain tops.
+
+Regression coverage includes all three CRM photos, both inch measurement profiles per customer, three catalog photographs per existing product, preservation of owner uploads, mannequin/variant rejection, credit accounting and request category. Measurements are authored workflow inputs, not measurements inferred from generated portraits.
+
+Visual acceptance requires the long hem, neckline, sleeve length, blue color and embroidery placement to survive, with no mannequin contamination. An HTTP 200 alone is not visual acceptance. Saree/lehenga catalog inputs remain reference photos requiring a suitable garment upload; raw fabric requires an enabled design service. No paid fallback is enabled.
+
+Current visual check (Neha, full-length category): knee-length silhouette and sleeve/neck embroidery restored; trousers removed and hem embroidery omitted. This is a failed exact-garment acceptance, not a passing fit test. Free service availability also caused two live 503 responses before the direct model check succeeded.
