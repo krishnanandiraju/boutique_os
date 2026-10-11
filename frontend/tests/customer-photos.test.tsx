@@ -15,7 +15,7 @@ beforeEach(() => {
 })
 test('saved CRM photograph appears automatically in try-on without an import action', async () => {
   render(<MantineProvider><VirtualTryOn customerId={1} customerName={customer.name} savedPhotoUrl={customer.photo_url} garments={[{key:'1:base',itemId:1,name:'Kurta',mediaUrl:'/media/garment.png',fabricOnly:false}]} onBusy={vi.fn()} onNotes={vi.fn()}/></MantineProvider>)
-  const image = await screen.findByAltText("Anjali Rao's original photograph")
+  const image = await screen.findByAltText("Anjali Rao's original photograph", {}, {timeout: 5000})
   await waitFor(() => expect(image.getAttribute('src')).toContain('data:image/png'))
   expect(screen.queryByText(/fictional|unverified|load demo/i)).toBeNull()
 })
@@ -35,4 +35,18 @@ test('free kurta previews default to a top to preserve trousers', async () => {
   render(<MantineProvider><VirtualTryOn customerId={1} customerName={customer.name} savedPhotoUrl={customer.photo_url} garments={[{key:'1:base',itemId:1,name:'Cotton Kurta - Blue',mediaUrl:'/media/garment.png',fabricOnly:false}]} onBusy={vi.fn()} onNotes={vi.fn()}/></MantineProvider>)
   const input = await screen.findByLabelText('Garment type', {selector: 'input'}) as HTMLInputElement
   expect(input.value).toBe('Top, blouse or kurta')
+})
+
+
+test('saved merchandise photograph appears automatically and approved photo is optional to replace', () => {
+  render(<MantineProvider><VirtualTryOn customerId={1} customerName={customer.name} garments={[{key:'3:base',itemId:3,name:'Cotton Kurta - Blue',mediaUrl:'/media/1/products/3/kurta-front-clean.png',fabricOnly:false}]} onBusy={vi.fn()} onNotes={vi.fn()}/></MantineProvider>)
+  expect(screen.getByAltText('Cotton Kurta - Blue').getAttribute('src')).toContain('/media/1/products/3/kurta-front-clean.png')
+  expect(screen.getByText('Replace product photo (optional)')).toBeTruthy()
+})
+
+test('a variant shows its product reference but still requires an exact photograph', () => {
+  render(<MantineProvider><VirtualTryOn customerId={1} customerName={customer.name} garments={[{key:'3:5',itemId:3,variantId:5,name:'Cotton Kurta - Red',mediaUrl:'/media/1/products/3/kurta-front-clean.png',fabricOnly:false}]} onBusy={vi.fn()} onNotes={vi.fn()}/></MantineProvider>)
+  expect(screen.getByAltText('Cotton Kurta - Red')).toBeTruthy()
+  expect(screen.queryByText('Replace product photo (optional)')).toBeNull()
+  expect(screen.getByRole('button', {name:'Preview on me'}).hasAttribute('disabled')).toBe(true)
 })

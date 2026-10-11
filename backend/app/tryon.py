@@ -2,6 +2,8 @@
 
 import base64
 import io
+import hashlib
+from pathlib import Path
 import re
 
 import google.auth
@@ -25,7 +27,8 @@ from app.catalog_models import ItemVariant
 from app.core.config import settings
 from app.db import get_db
 from app.fashn_tryon import generate_fashn_preview
-from app.models import Customer, Item
+from app.models import Customer, Item, MediaAsset
+from app.services.media_service import LocalMediaStorage, MediaStorageError
 
 router = APIRouter(prefix="/api/try-on", tags=["Virtual try-on"])
 MAX_BYTES = 10 * 1024 * 1024
@@ -82,6 +85,32 @@ def read_image(file: UploadFile) -> bytes:
         raise HTTPException(422, "This file is not a valid photograph.") from exc
 
 
+def read_garment(db: Session, item: Item, variant_id: int | None, source: str, upload: UploadFile | None) -> bytes:
+    if source == "upload":
+        if upload is None:
+            raise HTTPException(422, "Upload a photograph for this preview.")
+        return read_image(upload)
+    if source != "catalog":
+        raise HTTPException(422, "Choose a valid photograph source.")
+    # Product photographs cannot establish the colour of a specific variant.
+    if variant_id is not None:
+        raise HTTPException(422, "Upload a photograph of the selected variant.")
+    asset = db.query(MediaAsset).filter_by(item_id=item.id, merchant_id=item.merchant_id, is_primary=True).first()
+    approved = "fabric-front.png" if item.inventory_type == "YARDAGE" else "kurta-front-clean.png"
+    if not asset or asset.original_filename != approved:
+        raise HTTPException(422, "Upload a suitable photograph for this preview.")
+    try:
+        raw = LocalMediaStorage().resolve_path(asset.storage_key).read_bytes()
+        reference = (Path(__file__).parent / "data" / "photography" / approved).read_bytes()
+    except (OSError, MediaStorageError) as exc:
+        raise HTTPException(422, "Product photograph is unavailable. Upload a photograph instead.") from exc
+    # Only reviewed, mannequin-free bundled photos may be used automatically.
+    # A filename alone does not establish approval of an uploaded image.
+    if hashlib.sha256(raw).digest() != hashlib.sha256(reference).digest():
+        raise HTTPException(422, "Upload a suitable photograph for this preview.")
+    return read_image(UploadFile(file=io.BytesIO(raw), filename=approved))
+
+
 def generate_preview(person: bytes, garment: bytes) -> dict:
     project = settings.google_cloud_project
     region = settings.google_cloud_location
@@ -135,7 +164,7 @@ def generate(
     response: Response,
     request: Request,
     person: UploadFile = File(...),
-    garment: UploadFile = File(...),
+    garment: UploadFile | None = File(None),
     consent: bool = Form(...),
     customer_id: int = Form(...),
     item_id: int = Form(...),
@@ -160,10 +189,7 @@ def generate(
         variant = db.get(ItemVariant, variant_id)
         if not variant or variant.item_id != item.id:
             raise HTTPException(422, "This variant does not belong to the selected garment.")
-    if garment_source == "catalog":
-        raise HTTPException(422, "Use a suitable garment photograph before creating AI previews.")
-
-    person_bytes, garment_bytes = read_image(person), read_image(garment)
+    person_bytes, garment_bytes = read_image(person), read_garment(db, item, variant_id, garment_source, garment)
     job = reserve_generation_credits(
         db=db,
         auth=auth,

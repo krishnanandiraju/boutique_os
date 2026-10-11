@@ -40,7 +40,9 @@ export function VirtualTryOn({ customerId, customerName, savedPhotoUrl, garments
   const isDesign = Boolean(garment?.fabricOnly)
   const garmentCategory = category || (/dress|gown|lehenga|saree/i.test(garment?.name || '') ? 'one-pieces' : 'tops')
   const available = isDesign ? status?.design_configured : status?.configured
-  const garmentUrl = uploadedGarmentUrl
+  const catalogUrl = garment?.mediaUrl?.startsWith('/media/') ? `${base}${garment.mediaUrl}` : ''
+  const useCatalog = !garment?.variantId && /\/(kurta-front-clean|fabric-front)\.png$/.test(catalogUrl)
+  const garmentUrl = uploadedGarmentUrl || catalogUrl
 
   useEffect(() => {
     const controller = new AbortController()
@@ -89,13 +91,14 @@ export function VirtualTryOn({ customerId, customerName, savedPhotoUrl, garments
     const timer = window.setTimeout(() => controller.abort(), 135_000)
     try {
       const clothing = garmentPhoto
-      if (!clothing) throw new Error(isDesign ? 'Upload a clear fabric photograph before requesting a design concept.' : 'Upload a photograph of the selected finished garment.')
+      if (!clothing && !useCatalog) throw new Error(isDesign ? 'Upload a clear fabric photograph before requesting a design concept.' : 'Upload a photograph of the selected finished garment.')
       const form = new FormData()
-      form.append('person', person); form.append('garment', clothing, 'garment.jpg')
+      form.append('person', person)
+      if (clothing) form.append('garment', clothing, 'garment.jpg')
       if (isDesign) form.append('brief', brief)
       else { form.append('category', garmentCategory); form.append('photo_type', photoType || 'flat-lay') }
       form.append('consent', 'true'); form.append('customer_id', String(customerId)); form.append('item_id', String(garment.itemId))
-      form.append('garment_source', 'upload')
+      form.append('garment_source', clothing ? 'upload' : 'catalog')
       if (garment.variantId) form.append('variant_id', String(garment.variantId))
       const response = await fetch(`${base}/api/try-on/${isDesign ? 'design' : 'generate'}`,  { method: 'POST', body: form, signal: controller.signal })
       const payload = await response.json()
@@ -116,11 +119,11 @@ export function VirtualTryOn({ customerId, customerName, savedPhotoUrl, garments
       {isDesign && <Textarea label="Proposed design" description="Specify silhouette, neckline, sleeves and length." value={brief} maxLength={1000} disabled={busy} onChange={(e) => { setBrief(e.currentTarget.value); setResult('') }}/>} 
       <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
         <Paper withBorder p="md" radius="md"><Stack><Group><Camera size={18} /><Text fw={800}>1. Customer photograph</Text></Group><Box className="tryon-photo">{personUrl ? <Image src={personUrl} alt={`${customerName}'s original photograph`} fit="contain" h={300} /> : <Stack align="center" gap="xs"><Camera size={36} /><Text fw={700}>A clear, front-facing photo</Text><Text size="sm" c="dimmed" ta="center">Show the full body for dresses or the upper body for tops.</Text></Stack>}</Box><FileInput label="Upload customer photo" placeholder="Choose JPEG or PNG" accept="image/jpeg,image/png" value={person} onChange={(file) => choosePhoto(file, 'person')} clearable disabled={busy} />{savedPhoto && <Button variant="light" color="grape" disabled={busy} loading={loadingSavedPhoto} onClick={() => void loadSavedPhoto()}>Use saved customer photo</Button>}<Text size="xs" c="dimmed">Up to 10 MB. Photos are used for this preview and are not saved to the catalog.</Text></Stack></Paper>
-        <Paper withBorder p="md" radius="md"><Stack><Group><ImagePlus size={18} /><Text fw={800}>2. {isDesign ? 'Fabric photograph' : 'Garment photograph'}</Text></Group><Box className="tryon-photo">{garmentUrl ? <Image src={garmentUrl} alt={garment?.name} fit="contain" h={300} /> : <Stack align="center" gap="xs"><ImagePlus size={36} /><Text fw={700}>{isDesign ? 'Show the selected fabric' : 'Show the finished garment'}</Text><Text size="sm" c="dimmed" ta="center">{isDesign ? 'Capture weave, colour and motif clearly in good lighting.' : 'Use the exact colour and variant selected for this order.'}</Text></Stack>}</Box><FileInput label="Upload selected merchandise photo" placeholder="Choose JPEG or PNG" accept="image/jpeg,image/png" value={garmentPhoto} onChange={(file) => choosePhoto(file, 'garment')} clearable disabled={busy} /><Text size="xs" c="dimmed">{isDesign ? 'Use a clear fabric photo that shows its weave, colour and pattern.' : 'Use a clear photograph of the finished garment.'}</Text></Stack></Paper>
+        <Paper withBorder p="md" radius="md"><Stack><Group><ImagePlus size={18} /><Text fw={800}>2. {isDesign ? 'Fabric photograph' : 'Garment photograph'}</Text></Group><Box className="tryon-photo">{garmentUrl ? <Image src={garmentUrl} alt={garment?.name} fit="contain" h={300} /> : <Stack align="center" gap="xs"><ImagePlus size={36} /><Text fw={700}>{isDesign ? 'Show the selected fabric' : 'Show the finished garment'}</Text><Text size="sm" c="dimmed" ta="center">{isDesign ? 'Capture weave, colour and motif clearly in good lighting.' : 'Use the exact colour and variant selected for this order.'}</Text></Stack>}</Box><FileInput label={useCatalog ? 'Replace product photo (optional)' : 'Upload a photograph for this preview'} placeholder="Choose JPEG or PNG" accept="image/jpeg,image/png" value={garmentPhoto} onChange={(file) => choosePhoto(file, 'garment')} clearable disabled={busy} /><Text size="xs" c="dimmed">{isDesign ? 'Use a clear fabric photo that shows its weave, colour and pattern.' : (useCatalog ? 'The saved product photograph is ready for your preview.' : 'The product photo is shown for reference. Upload a clear photograph of the exact garment, without a mannequin, to create a preview.')}</Text></Stack></Paper>
       </SimpleGrid>
       <Checkbox label="The customer permits these photos to be processed for their virtual try-on preview." checked={consent} onChange={(e) => { setConsent(e.currentTarget.checked); setResult('') }} disabled={busy} />
       {error && <Alert color="red" role="alert">{error}</Alert>}
-      <Group><Button size="md" color="grape" leftSection={<Sparkles size={18} />} loading={busy} disabled={!available || !person || !garmentUrl || !consent || (isDesign && brief.trim().length < 3)} onClick={() => void generate()}>{isDesign ? 'Preview proposed design' : 'Preview on me'}</Button><Text size="sm" c="dimmed" aria-live="polite">{busy ? 'Creating your preview. This can take up to two minutes…' : 'A visual preview; measurements still guide tailoring.'}</Text></Group>
+      <Group><Button size="md" color="grape" leftSection={<Sparkles size={18} />} loading={busy} disabled={!available || !person || (!garmentPhoto && !useCatalog) || !consent || (isDesign && brief.trim().length < 3)} onClick={() => void generate()}>{isDesign ? 'Preview proposed design' : 'Preview on me'}</Button><Text size="sm" c="dimmed" aria-live="polite">{busy ? 'Creating your preview. This can take up to two minutes…' : 'A visual preview; measurements still guide tailoring.'}</Text></Group>
       <Textarea label="Adjustments to discuss with the tailor" description="Staff observations: length, sleeves, neckline, ease or construction changes. These are not automatically measured from the preview." value={garment?.notes || ''} maxLength={2000} disabled={busy} onChange={(e) => garment && onNotes(garment.key, e.currentTarget.value)}/>
       {result && <Paper withBorder p="md"><Stack><Group justify="space-between"><Title order={3}>Your look</Title><Button component="a" href={result} download="boutiqueos-try-on.png" variant="light" color="grape">Download preview</Button></Group><SimpleGrid cols={{ base: 1, sm: 2 }}><Stack><Text fw={700}>Original</Text><Image src={personUrl} alt="Original customer photograph" fit="contain" h={420} /></Stack><Stack><Text fw={700}>{isDesign ? 'Approximate design concept' : 'Virtual preview'} · {garment?.name}</Text><Image src={result} alt={`AI preview of ${customerName} wearing ${garment?.name}`} fit="contain" h={420} /></Stack></SimpleGrid><Text size="sm" c="dimmed">AI may change details of the garment or body. This preview does not predict size or fit.</Text></Stack></Paper>}
     </>}

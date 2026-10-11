@@ -68,7 +68,7 @@
   - service enablement + credits per success + spending caps
   - recent ledger usage history
 - Customer CRM AI control text now uses “Allow AI previews” and segment-following terminology.
-- Virtual try-on flow requires uploaded merchandise/fabric photos for generation (no catalog/mannequin fallback input for generation requests).
+- Virtual try-on flow requires uploaded merchandise/fabric photos for generation (no unreviewed catalog/mannequin fallback input for generation requests).
 - Fitting flow status messaging avoids provider names and raw provider errors.
 
 ## Validation completed
@@ -82,3 +82,8 @@
 1. The authenticated context currently supports development defaults and optional trusted dev headers; full production identity integration (real auth/session/JWT-backed tenant+role assertions) still needs to be wired before removing the production admin guard.
 2. Queue/fairness is implemented in-process; if multi-replica horizontal scale is required, move slot fairness and queueing to shared infrastructure.
 3. Visual validation matrix (4 finished products × 3 customers) still requires manual execution against live provider readiness and should be logged separately from quota/credit failures.
+
+
+## Saved product photographs
+
+The fitting room displays the selected product photograph automatically. Reviewed mannequin-free bundled kurta and fabric photographs can be used without an upload; the backend resolves primary media scoped to the selected tenant/product and verifies its bytes against the reviewed asset. Variant selections and other photographs require an exact suitable upload. Catalog inputs go through the same tenant policy, eligibility and credit reservation/charge/release lifecycle as uploads. No arbitrary image URL is accepted.
