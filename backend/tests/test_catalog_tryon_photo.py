@@ -82,6 +82,7 @@ def test_catalog_generation_uses_tenant_credit_lifecycle(monkeypatch):
         result = client.post('/api/try-on/generate', data=data, files={'person': ('person.png', photo(), 'image/png')})
         assert result.status_code == 200, result.text
         provider.assert_called_once()
+        assert provider.call_args.args[2:] == ('one-pieces', 'flat-lay')
         with SessionLocal() as db:
             account = db.get(TenantAICreditAccount, 1)
             assert account.available_credits == before[0] - 1

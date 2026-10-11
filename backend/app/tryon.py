@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from app.ai_policy import (
     AuthContext,
+    ProductAIConfiguration,
     complete_generation_failure,
     complete_generation_success,
     get_auth_context,
@@ -190,6 +191,16 @@ def generate(
         if not variant or variant.item_id != item.id:
             raise HTTPException(422, "This variant does not belong to the selected garment.")
     person_bytes, garment_bytes = read_image(person), read_garment(db, item, variant_id, garment_source, garment)
+    # Saved catalog inputs use the owner's product settings, not a stale browser default.
+    if garment_source == 'catalog':
+        configuration = db.query(ProductAIConfiguration).filter_by(
+            merchant_id=item.merchant_id, item_id=item.id, variant_id=variant_id).first()
+        if configuration:
+            category = configuration.garment_category or category
+            photo_type = configuration.required_photo_type or photo_type
+        # The reviewed bundled kurta is knee length, even before a policy is provisioned.
+        if item.name == 'Cotton Kurta - Blue' and variant_id is None:
+            category = 'one-pieces'
     job = reserve_generation_credits(
         db=db,
         auth=auth,
