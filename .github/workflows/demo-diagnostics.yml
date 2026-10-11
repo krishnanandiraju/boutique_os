@@ -17,25 +17,26 @@ jobs:
           python3 - <<'PY'
           import base64, json, subprocess, urllib.request
           authentication = subprocess.check_output(['az','account','get-access-token','--resource','https://management.azure.com/','--query','accessToken','-o','tsv']).decode().strip()
-          command = '/bin/ls -1 /home/site/wwwroot'
-          request = urllib.request.Request('https://boutiqueos-api-4746.scm.azurewebsites.net/api/command',data=json.dumps({'command':command,'dir':'/home/site/wwwroot'}).encode(),headers={'Authorization':'Bearer '+authentication,'Content-Type':'application/json'})
-          try:
-              with urllib.request.urlopen(request,timeout=100) as response:
-                  result=json.load(response)
-                  print(result.get('Output','')[:3000]);print(result.get('Error','')[:1000]);print('Exit code:',result.get('ExitCode'))
-          except Exception as exc:
-              print('Diagnostic access:',type(exc).__name__,getattr(exc,'code',None))
-          logs = subprocess.run(['az','webapp','log','startup','show','--resource-group','rg-boutiqueos-demo','--name','boutiqueos-api-4746','-o','json'],capture_output=True,text=True)
-          try:
-              decoded=json.loads(logs.stdout)
-              content=decoded.get('content','') if isinstance(decoded,dict) else str(decoded)
-          except ValueError:
-              content=logs.stdout
-          lines=content.splitlines()
-          for index,line in enumerate(lines):
-              if any(word in line.lower() for word in ['error','exception','traceback','failed','timeout']):
-                  for nearby in lines[max(0,index-2):min(len(lines),index+4)]:
-                      if not any(word in nearby.lower() for word in ['password','secret','token','credential']):
-                          print(nearby[:1200])
-          print(logs.stderr[:1000])
+          for command in ['python3 -c print(1)', '/usr/bin/curl --max-time 20 -s -o /dev/null -w %{http_code} https://fashn-ai-fashn-vton-1-5.hf.space/config', '/bin/tar --zstd -tf /home/site/wwwroot/output.tar.zst']:
+              request = urllib.request.Request('https://boutiqueos-api-4746.scm.azurewebsites.net/api/command',data=json.dumps({'command':command,'dir':'/home/site/wwwroot'}).encode(),headers={'Authorization':'Bearer '+authentication,'Content-Type':'application/json'})
+              try:
+                  with urllib.request.urlopen(request,timeout=100) as response:
+                      result=json.load(response)
+                      print('Command:',command);print(result.get('Output','')[:2000]);print(result.get('Error','')[:1000]);print('Exit code:',result.get('ExitCode'))
+              except Exception as exc:
+                  print('Diagnostic access:',type(exc).__name__,getattr(exc,'code',None))
+          req=urllib.request.Request('https://boutiqueos-api-4746.scm.azurewebsites.net/api/logs/docker',headers={'Authorization':'Bearer '+authentication})
+          with urllib.request.urlopen(req,timeout=60) as response:
+              files=json.load(response)
+          for log in files[-2:]:
+              url=log.get('href') or log.get('url')
+              if not url: continue
+              req=urllib.request.Request(url,headers={'Authorization':'Bearer '+authentication})
+              with urllib.request.urlopen(req,timeout=60) as response:
+                  lines=response.read().decode(errors='replace').splitlines()
+              for index,line in enumerate(lines):
+                  if any(word in line.lower() for word in ['traceback','exception','error:','failed','httpx']):
+                      for nearby in lines[max(0,index-2):min(len(lines),index+5)]:
+                          if not any(word in nearby.lower() for word in ['password','secret','token','credential']):
+                              print(nearby[:1000])
           PY
