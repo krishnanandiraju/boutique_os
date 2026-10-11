@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     integration_retry_limit: int = 3
     fabric_design_enabled: bool = False
     ai_policy_admin_enabled: bool = False
+    ai_demo_bootstrap_enabled: bool = False
     fabric_design_model: str = "gemini-2.5-flash-image"
     fabric_design_location: str = "global"
     tryon_enabled: bool = False
