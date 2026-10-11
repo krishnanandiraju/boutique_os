@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Alert, Avatar, Badge, Button, Checkbox, Divider, Group, Modal, NumberInput, Paper, Select, SimpleGrid, Stack, Text, TextInput, Textarea, Title } from '@mantine/core'
 import { CalendarHeart, Save, Sparkles } from 'lucide-react'
+import { CustomerAIAccess } from './AIPolicy'
 import { customerPhotoUrl } from './demoCustomers'
 import type { Customer } from '../../types'
 import { customerCrmApi, type CustomerOccasion, type CustomerProfile } from '../../customerCrmApi'
@@ -133,9 +134,10 @@ export function CustomerCrmModal({ customer, opened, onClose, onSaved }: { custo
         <TextInput label="Anniversary date" type="date" value={form.anniversary_date ?? ''} onChange={(e) => setForm({ ...form, anniversary_date: e.currentTarget.value || null })} />
         <Select label="Acquisition source" clearable searchable data={['Walk-in', 'Instagram', 'WhatsApp', 'Referral', 'Exhibition', 'Website', 'Marketplace', 'Other']} value={form.acquisition_source} onChange={(value) => setForm({ ...form, acquisition_source: value })} />
         <TextInput label="Acquisition detail" placeholder="Referral name, campaign, exhibition..." value={form.acquisition_detail ?? ''} onChange={(e) => setForm({ ...form, acquisition_detail: e.currentTarget.value || null })} />
-        <TextInput label="Customer segment" placeholder="VIP, Bridal, Regular..." value={form.customer_segment ?? ''} onChange={(e) => setForm({ ...form, customer_segment: e.currentTarget.value || null })} />
+        <TextInput label="Customer segment" description="Use New, Repeat or VIP for AI policies; other labels remain available." placeholder="New, Repeat, VIP" value={form.customer_segment ?? ''} onChange={(e) => setForm({ ...form, customer_segment: e.currentTarget.value || null })} />
         <TextInput label="Merchant tags" description="Comma separated; searchable customer memory." placeholder="VIP, bridal, prefers pastels" value={tagsText} onChange={(e) => setTagsText(e.currentTarget.value)} />
       </SimpleGrid>
+      {customer && <CustomerAIAccess key={customer.id} customerId={customer.id} />}
       <Textarea label="Style / service preferences" placeholder="Preferred fits, colours, fabrics, service notes..." minRows={3} value={styleNotes} onChange={(e) => setStyleNotes(e.currentTarget.value)} />
       <Checkbox label="Marketing consent" checked={form.marketing_consent} onChange={(e) => setForm({ ...form, marketing_consent: e.currentTarget.checked })} />
       <Group justify="flex-end"><Button color="grape" leftSection={<Save size={16} />} loading={saving} onClick={() => void save()}>Save CRM profile</Button></Group>
