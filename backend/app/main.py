@@ -23,6 +23,7 @@ from app.stitching.service import seed_garment_definitions
 from app.system_api import router as system_router
 from app.tryon import router as tryon_router
 from app import fabric_design  # register fabric concept route
+from app.ai_policy import router as ai_policy_router
 
 logger = logging.getLogger("boutiqueos")
 
@@ -138,6 +139,7 @@ def create_app() -> FastAPI:
     app.include_router(pricing_router)
     app.include_router(customer_crm_v2_router)
     app.include_router(tryon_router)
+    app.include_router(ai_policy_router)
     return app
 
 
