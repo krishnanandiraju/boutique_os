@@ -17,7 +17,7 @@ jobs:
           python3 - <<'PY'
           import base64, json, subprocess, urllib.request
           authentication = subprocess.check_output(['az','account','get-access-token','--resource','https://management.azure.com/','--query','accessToken','-o','tsv']).decode().strip()
-          command = "pwd; ls -1 /home/site/wwwroot; command -v python3; curl --max-time 20 -s -o /dev/null -w 'HF config status: %{http_code}\\n' https://fashn-ai-fashn-vton-1-5.hf.space/config"
+          command = '/bin/ls -1 /home/site/wwwroot'
           request = urllib.request.Request('https://boutiqueos-api-4746.scm.azurewebsites.net/api/command',data=json.dumps({'command':command,'dir':'/home/site/wwwroot'}).encode(),headers={'Authorization':'Bearer '+authentication,'Content-Type':'application/json'})
           try:
               with urllib.request.urlopen(request,timeout=100) as response:
@@ -26,8 +26,16 @@ jobs:
           except Exception as exc:
               print('Diagnostic access:',type(exc).__name__,getattr(exc,'code',None))
           logs = subprocess.run(['az','webapp','log','startup','show','--resource-group','rg-boutiqueos-demo','--name','boutiqueos-api-4746','-o','json'],capture_output=True,text=True)
-          for line in (logs.stdout+'\\n'+logs.stderr).splitlines():
+          try:
+              decoded=json.loads(logs.stdout)
+              content=decoded.get('content','') if isinstance(decoded,dict) else str(decoded)
+          except ValueError:
+              content=logs.stdout
+          lines=content.splitlines()
+          for index,line in enumerate(lines):
               if any(word in line.lower() for word in ['error','exception','traceback','failed','timeout']):
-                  if not any(word in line.lower() for word in ['password','secret','token','credential']):
-                      print(line[:2000])
+                  for nearby in lines[max(0,index-2):min(len(lines),index+4)]:
+                      if not any(word in nearby.lower() for word in ['password','secret','token','credential']):
+                          print(nearby[:1200])
+          print(logs.stderr[:1000])
           PY
