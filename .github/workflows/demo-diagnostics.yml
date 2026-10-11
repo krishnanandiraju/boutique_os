@@ -1,0 +1,30 @@
+name: Diagnose demo preview connection
+on:
+  push:
+    branches: [ops/demo-preview-diagnostics]
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Check Azure provider connection without exposing credentials
+        run: |
+          python3 - <<'PY'
+          import base64, json, subprocess, urllib.request
+          credentials = json.loads(subprocess.check_output(['az','webapp','deployment','list-publishing-credentials','--resource-group','rg-boutiqueos-demo','--name','boutiqueos-api-4746','--query','[publishingUserName,publishingPassword]','-o','json']))
+          authentication = base64.b64encode((credentials[0]+':'+credentials[1]).encode()).decode()
+          command = "pwd; ls -1 /home/site/wwwroot; command -v python3; curl --max-time 20 -s -o /dev/null -w 'HF config status: %{http_code}\\n' https://fashn-ai-fashn-vton-1-5.hf.space/config"
+          request = urllib.request.Request('https://boutiqueos-api-4746.scm.azurewebsites.net/api/command',data=json.dumps({'command':command,'dir':'/home/site/wwwroot'}).encode(),headers={'Authorization':'Basic '+authentication,'Content-Type':'application/json'})
+          try:
+              with urllib.request.urlopen(request,timeout=100) as response:
+                  result=json.load(response)
+                  print(result.get('Output','')[:3000]);print(result.get('Error','')[:1000]);print('Exit code:',result.get('ExitCode'))
+          except Exception as exc:
+              print('Diagnostic access:',type(exc).__name__,getattr(exc,'code',None))
+              raise SystemExit(1)
+          PY
