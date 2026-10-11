@@ -76,7 +76,7 @@ jobs:
           az webapp config appsettings set \
             --resource-group "$RESOURCE_GROUP" \
             --name "$WEBAPP_NAME" \
-            --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true ENVIRONMENT=production TRYON_ENABLED=true TRYON_PROVIDER=huggingface \
+            --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true ENVIRONMENT=production TRYON_ENABLED=true TRYON_PROVIDER=huggingface AI_DEMO_BOOTSTRAP_ENABLED=true AI_GENERATION_RETRY_LIMIT=1 \
             --output none
 
           az webapp deploy \

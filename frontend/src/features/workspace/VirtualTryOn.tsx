@@ -100,7 +100,7 @@ export function VirtualTryOn({ customerId, customerName, savedPhotoUrl, garments
       form.append('consent', 'true'); form.append('customer_id', String(customerId)); form.append('item_id', String(garment.itemId))
       form.append('garment_source', clothing ? 'upload' : 'catalog')
       if (garment.variantId) form.append('variant_id', String(garment.variantId))
-      const response = await fetch(`${base}/api/try-on/${isDesign ? 'design' : 'generate'}`,  { method: 'POST', body: form, signal: controller.signal })
+      const response = await fetch(`${base}/api/try-on/${isDesign ? 'design' : 'generate'}`,  { method: 'POST', headers: {'Idempotency-Key': crypto.randomUUID()}, body: form, signal: controller.signal })
       const payload = await response.json()
       if (!response.ok) throw new Error(payload.error?.message || payload.detail || 'Your preview is unavailable right now. Please try later or continue to customization.')
       if (!payload.image?.startsWith('data:image/')) throw new Error('No preview was returned.')

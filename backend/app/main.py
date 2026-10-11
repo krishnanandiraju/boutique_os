@@ -15,6 +15,7 @@ from app.customer_crm_v2 import router as customer_crm_v2_router
 from app.db import Base, SessionLocal, engine
 from app.domain_v2 import router as domain_v2_router
 from app.seed import seed_data
+from app.demo_ai import provision_demo_ai
 from app.pricing_api import router as pricing_router
 from app.services.inventory_service import DomainError
 from app.stitching.demo_seed import seed_demo_fit_memory
@@ -63,6 +64,7 @@ async def lifespan(app: FastAPI):
         seed_data(db)
         seed_garment_definitions(db)
         seed_demo_fit_memory(db)
+        provision_demo_ai(db)
     finally:
         db.close()
     yield

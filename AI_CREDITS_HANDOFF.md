@@ -68,7 +68,7 @@
   - service enablement + credits per success + spending caps
   - recent ledger usage history
 - Customer CRM AI control text now uses “Allow AI previews” and segment-following terminology.
-- Virtual try-on flow requires uploaded merchandise/fabric photos for generation (no unreviewed catalog/mannequin fallback input for generation requests).
+- Virtual try-on uses reviewed saved photographs or suitable uploaded merchandise/fabric photographs (no unreviewed catalog/mannequin fallback input for generation requests).
 - Fitting flow status messaging avoids provider names and raw provider errors.
 
 ## Validation completed
@@ -87,3 +87,8 @@
 ## Saved product photographs
 
 The fitting room displays the selected product photograph automatically. Reviewed mannequin-free bundled kurta and fabric photographs can be used without an upload; the backend resolves primary media scoped to the selected tenant/product and verifies its bytes against the reviewed asset. Variant selections and other photographs require an exact suitable upload. Catalog inputs go through the same tenant policy, eligibility and credit reservation/charge/release lifecycle as uploads. No arbitrary image URL is accepted.
+
+
+## Meera Boutique demo provisioning
+
+The demo Azure workflow explicitly enables AI_DEMO_BOOTSTRAP_ENABLED. Startup provisions only merchant 1 named Meera Boutique, only with the free Hugging Face provider enabled: Standard Preview at one tenant credit per success, a one-time ledger grant of 100 credits, and access for Anjali Rao, Priya Sharma and Neha Reddy. The reviewed Cotton Kurta product is enabled. Other tenants, premium services and production admin write guards are unchanged. A ledger marker prevents restart top-ups or repeated policy overwrites. Set the flag false on deployments outside this demo. Each preview click now supplies a fresh idempotency key so repeat demonstrations work; provider retries retain the same reservation. No paid provider is enabled.
