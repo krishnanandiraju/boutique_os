@@ -15,7 +15,7 @@ jobs:
       - name: Check Azure provider connection without exposing credentials
         run: |
           python3 - <<'PY'
-          import base64, json, subprocess, urllib.request
+          import base64, json, subprocess, urllib.request, urllib.parse
           authentication = subprocess.check_output(['az','account','get-access-token','--resource','https://management.azure.com/','--query','accessToken','-o','tsv']).decode().strip()
           for command in ['python3 -c print(1)', '/usr/bin/curl --max-time 20 -s -o /dev/null -w %{http_code} https://fashn-ai-fashn-vton-1-5.hf.space/config', '/bin/tar --zstd -tf /home/site/wwwroot/output.tar.zst']:
               request = urllib.request.Request('https://boutiqueos-api-4746.scm.azurewebsites.net/api/command',data=json.dumps({'command':command,'dir':'/home/site/wwwroot'}).encode(),headers={'Authorization':'Bearer '+authentication,'Content-Type':'application/json'})
@@ -30,7 +30,7 @@ jobs:
               files=json.load(response)
           for log in files[-2:]:
               url=log.get('href') or log.get('url')
-              if not url: continue
+              if not url or urllib.parse.urlsplit(url).netloc != 'boutiqueos-api-4746.scm.azurewebsites.net' or not url.startswith('https://'): continue
               req=urllib.request.Request(url,headers={'Authorization':'Bearer '+authentication})
               with urllib.request.urlopen(req,timeout=60) as response:
                   lines=response.read().decode(errors='replace').splitlines()
